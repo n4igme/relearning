@@ -1,0 +1,324 @@
+:root {
+    --primary-color: #8F90FF;
+    --primary-dark: #7A7BFF;
+    --secondary-color: #6c757d;
+    --accent-color: #E0E1FF;
+    --dark-color: #292F36;
+    --light-color: #F8F9FA;
+    --input-bg: #FFFFFF;
+    --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    --error-color: #ff4444;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #F5F5F5;
+    display: flex;
+    min-height: 100vh;
+    color: var(--dark-color);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Bagian Illustrasi */
+.illustration-section {
+    flex: 1;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.illustration-container {
+    max-width: 600px;
+    text-align: center;
+    z-index: 2;
+}
+
+.illustration-img {
+    width: 100%;
+    max-width: 450px;
+    margin-bottom: 2rem;
+    animation: float 6s ease-in-out infinite;
+}
+
+.illustration-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.illustration-text {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    line-height: 1.6;
+    max-width: 500px;
+    margin: 0 auto 2rem;
+}
+
+.features {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.feature-item {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.feature-icon {
+    font-size: 1.2rem;
+}
+
+/* Bagian Login Form */
+.login-section {
+    width: 450px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    background-color: white;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.05);
+}
+
+.login-container {
+    width: 100%;
+    max-width: 380px;
+}
+
+.login-card {
+    text-align: center;
+}
+
+.logo {
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    font-size: 2.8rem;
+}
+
+.login-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--dark-color);
+}
+
+.login-subtitle {
+    color: var(--secondary-color);
+    margin-bottom: 2.5rem;
+    font-size: 1rem;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.input-label {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-weight: 500;
+    color: var(--dark-color);
+    font-size: 0.95rem;
+}
+
+.input-field {
+    width: 100%;
+    padding: 0.9rem 1.3rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background-color: var(--input-bg);
+}
+
+.input-field:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-color);
+}
+
+.error-message {
+    color: var(--error-color);
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+    display: block;
+}
+
+.password-container {
+    position: relative;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--secondary-color);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.toggle-password:hover {
+    color: var(--primary-color);
+}
+
+.remember-forgot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.8rem;
+    font-size: 0.95rem;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.remember-me input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.forgot-password {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+    color: var(--primary-dark);
+}
+
+.login-button {
+    width: 100%;
+    padding: 1.1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 1.8rem;
+}
+
+.login-button:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(143, 144, 255, 0.4);
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 2rem 0;
+    color: var(--secondary-color);
+    font-size: 0.95rem;
+}
+
+.divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #e0e0e0;
+    margin: 0 12px;
+}
+
+.social-login {
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.social-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+    color: var(--dark-color);
+    transition: all 0.3s ease;
+}
+
+.social-icon:hover {
+    background-color: #e0e0e0;
+    transform: translateY(-3px) scale(1.1);
+}
+
+.register-link {
+    font-size: 1rem;
+    color: var(--secondary-color);
+}
+
+.register-link a {
+    color: var(--primary-color);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+    color: var(--primary-dark);
+}
+
+/* Animations */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0px); }
+}
+
+/* Responsive Design untuk Desktop Lebar */
+@media (min-width: 1600px) {
+    .login-section {
+        width: 500px;
+    }
+    
+    .illustration-container {
+        max-width: 700px;
+    }
+}
+
+/* Tetap pertahankan responsive untuk mobile */
+@media (max-width: 992px) {
+    body {
+        flex-direction: column;
+    }
+    
+    .illustration-section {
+        display: none;
+    }
+    
+    .login-section {
+        width: 100%;
+        padding: 4rem 2rem;
+    }
+}
