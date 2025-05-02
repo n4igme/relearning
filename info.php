@@ -549,6 +549,7 @@ $result = mysqli_query($conn, $sql);
   <div class="mb-3">
     <label for="gambar" class="form-label">Gambar Kuis</label>
     <input type="file" class="form-control" id="gambar" name="gambar" accept="image/*">
+
   </div>
 
   <!-- Form untuk soal -->
@@ -578,11 +579,11 @@ $result = mysqli_query($conn, $sql);
   </div>
 
   <button type="submit" class="btn btn-primary">Simpan Kuis</button>
+              </div>
 </form>
-
-
-
-
+              </div>
+              </div>
+              </div>
 <!-- Footer -->
 <footer class="container-sections">
   <div class="footer-sections">

@@ -33,7 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                      VALUES ('$id_kuis', '$pertanyaan1', '$opsi_a1', '$opsi_b1', '$opsi_c1', '$opsi_d1', '$jawaban_benar1')";
         mysqli_query($conn, $sql_soal);
 
-        echo "Kuis berhasil ditambahkan!";
+        #echo "Kuis berhasil ditambahkan!";
+        header("Location: info.php");
     } else {
         echo "Gagal menambahkan kuis: " . mysqli_error($conn);
     }
