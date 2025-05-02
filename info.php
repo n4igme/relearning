@@ -1,6 +1,9 @@
+
+
 <?php
 include 'koneksi.php';
 ?>
+
 
 
 
@@ -269,67 +272,57 @@ $result = mysqli_query($conn, $sql);
           
           <br>
 
-       <!-- Quizzes Section -->
-       <section id = "Daftar Kuis"> 
-<div class="section-container">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="section-title"><i class="bi bi-question-circle me-2"></i>Daftar Kuis</h2>
-    <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#tambahKuisModal">
-  <i class="bi bi-plus-circle me-1"></i>Tambah Kuis
-</button>
+       <!-- Main Content -->
+<section id="Daftar Kuis"> 
+  <main class="main-content">
+    <div class="container-fluid">
+      <div class="row">
+        <section class="col-md-12 p-4">
+          <!-- Kuis Section -->
+          <div class="section-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h2 class="section-title"><i class="bi bi-journal-check me-2"></i>Daftar Kuis</h2>
+              <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#tambahKuisModal">
+                <i class="bi bi-plus-circle me-1"></i>Tambah Kuis
+              </button>
+            </div>
 
-  </div>
-  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="daftar-kuis">
-</div>
+            <?php
+            include 'koneksi.php'; // koneksi ke database
 
-  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-    <!-- Quiz Card 1 -->
-    <div class="col">
-      <div class="card h-100">
-        <img src="images/quiz1.jpeg" class="card-img-top" alt="Ilustrasi Kuis Pemrograman">
-        <div class="card-body">
-          <h5 class="card-title">Kuis Pemrograman Dasar</h5>
-          <p class="card-text">Uji pemahaman Anda tentang dasar-dasar pemrograman dengan 20 pertanyaan pilihan ganda.</p>
-          <div class="d-flex justify-content-between align-items-center">
-            <span class="badge bg-warning text-dark">Belum Selesai</span>
-            <a href="detail_kuis1.php" class="btn btn-custom btn-sm">Mulai Kuis</a>
+            // Query untuk mengambil daftar kuis dari database
+            $sql = "SELECT * FROM kuis ORDER BY id DESC";
+            $result = mysqli_query($conn, $sql);
+            ?>
+
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+              <?php while ($row = mysqli_fetch_assoc($result)) : ?>
+                <div class="col">
+                  <div class="card h-100">
+                    <img src="images/<?= htmlspecialchars($row['gambar']) ?>" class="card-img-top" alt="Gambar Kuis">
+                    <div class="card-body">
+                      <h5 class="card-title"><?= htmlspecialchars($row['judul']) ?></h5>
+                      <p class="card-text"><?= nl2br(htmlspecialchars($row['deskripsi'])) ?></p>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary">Kuis</span>
+                        <div class="d-flex gap-2">
+                          <a href="detail_kuis.php?id=<?= $row['id'] ?>" class="btn btn-primary btn-sm">Lihat Kuis</a>
+                          <a href="edit_kuis.php?id=<?= $row['id'] ?>" class="btn btn-warning btn-sm">Edit</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              <?php endwhile; ?>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
+  </main>
+</section
 
-            
-            <!-- Quiz Card 2 -->
-            <div class="col">
-              <div class="card h-100">
-                <img src="images/quiz2.jpeg" class="card-img-top" alt="Ilustrasi Kuis Desain">
-                <div class="card-body">
-                  <h5 class="card-title">Kuis Desain Grafis</h5>
-                  <p class="card-text">Uji kemampuan dan pemahaman desain grafis Anda dengan studi kasus praktis.</p>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="badge bg-success">Selesai</span>
-                    <a href="detail_kuis2.php" class="btn btn-custom btn-sm">Mulai Kuis</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Quiz Card 3 -->
-            <div class="col">
-              <div class="card h-100">
-                <img src="images/quiz3.jpeg" class="card-img-top" alt="Ilustrasi Kuis Manajemen">
-                <div class="card-body">
-                  <h5 class="card-title">Kuis Manajemen Proyek</h5>
-                  <p class="card-text">Uji pengetahuan Anda tentang metodologi dan praktik terbaik Manajemen Proyek.</p>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="badge bg-success">Selesai</span>
-                    <a href="detail_kuis3.php" class="btn btn-custom btn-sm">Mulai Kuis</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+  
 
         <!-- Discussion Forum Section -->
         <section id = "Daftar Diskusi"> 
@@ -536,160 +529,58 @@ $result = mysqli_query($conn, $sql);
   </div>
 </div>
 
-
-<!-- Modal Tambah Kuis -->
-<div class="modal fade" id="tambahKuisModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+<!-- Modal untuk tambah kuis -->
+<div class="modal fade" id="tambahKuisModal" tabindex="-1" aria-labelledby="tambahKuisModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">Tambah Kuis + Soal Sekaligus</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-header">
+        <h5 class="modal-title" id="tambahKuisModalLabel">Tambah Kuis Baru</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <!-- Form Utama -->
-        <div class="mb-4">
-          <h6 class="fw-bold border-bottom pb-2">Informasi Kuis</h6>
-          <div class="mb-3">
-            <label class="form-label">Judul Kuis <span class="text-danger">*</span></label>
-            <input type="text" id="judulKuis" class="form-control" placeholder="Contoh: Kuis PHP Dasar" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Deskripsi</label>
-            <textarea id="deskripsiKuis" class="form-control" rows="2"></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Gambar Thumbnail Kuis</label>
-            <div class="d-flex align-items-center">
-              <div class="me-3">
-                <img id="previewImage" src="https://via.placeholder.com/150" alt="Preview" class="img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
-              </div>
-              <div class="flex-grow-1">
-                <input type="file" id="gambarKuis" class="form-control" accept="image/*">
-                <small class="text-muted">Format: JPG, PNG (Maks. 2MB)</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Form Soal -->
-        <h6 class="fw-bold border-bottom pb-2">Daftar Soal</h6>
-        <div id="soalContainer">
-          <!-- Soal 1 -->
-          <div class="soal-item card mb-3">
-            <div class="card-header bg-light d-flex justify-content-between">
-              <span class="fw-bold">Soal #1</span>
-            </div>
-            <div class="card-body">
-              <div class="mb-3">
-                <label class="form-label">Pertanyaan <span class="text-danger">*</span></label>
-                <input type="text" class="form-control pertanyaan" placeholder="Tulis pertanyaan..." required>
-              </div>
-              <div class="row g-2">
-                <div class="col-md-6">
-                  <label class="form-label">Opsi A <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control opsi" data-opsi="a" placeholder="Jawaban A" required>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Opsi B <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control opsi" data-opsi="b" placeholder="Jawaban B" required>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Opsi C <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control opsi" data-opsi="c" placeholder="Jawaban C" required>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Opsi D <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control opsi" data-opsi="d" placeholder="Jawaban D" required>
-                </div>
-              </div>
-              <div class="mt-3">
-                <label class="form-label">Jawaban Benar <span class="text-danger">*</span></label>
-                <select class="form-select jawaban-benar" required>
-                  <option value="">Pilih Jawaban</option>
-                  <option value="a">A</option>
-                  <option value="b">B</option>
-                  <option value="c">C</option>
-                  <option value="d">D</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tombol Tambah Soal -->
-        <button type="button" id="tambahSoalBtn" class="btn btn-sm btn-success mb-3">
-          <i class="bi bi-plus-circle"></i> Tambah Soal
-        </button>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="button" id="simpanKuisBtn" class="btn btn-primary">
-          <i class="bi bi-save"></i> Simpan Semua
-        </button>
-      </div>
-    </div>
+      <form action="tambah_kuis.php" method="POST" enctype="multipart/form-data">
+  <div class="mb-3">
+    <label for="judul" class="form-label">Judul Kuis</label>
+    <input type="text" class="form-control" id="judul" name="judul" required>
   </div>
-</div>
-
-<!-- Template Pertanyaan (Hidden) -->
-<script type="text/template" id="templatePertanyaan">
-  <div class="pertanyaan-item card mb-3" data-id="<%= id %>">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-      <span class="fw-bold">Pertanyaan #<%= nomor %></span>
-      <button type="button" class="btn btn-sm btn-danger hapus-pertanyaan">
-        <i class="bi bi-trash"></i> Hapus
-      </button>
-    </div>
-    <div class="card-body">
-      <div class="mb-3">
-        <label class="form-label">Pertanyaan <span class="text-danger">*</span></label>
-        <input type="text" class="form-control pertanyaan-text" placeholder="Masukkan pertanyaan" required>
-      </div>
-      
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Opsi A <span class="text-danger">*</span></label>
-          <div class="input-group">
-            <span class="input-group-text">A</span>
-            <input type="text" class="form-control opsi-a" placeholder="Jawaban A" required>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Opsi B <span class="text-danger">*</span></label>
-          <div class="input-group">
-            <span class="input-group-text">B</span>
-            <input type="text" class="form-control opsi-b" placeholder="Jawaban B" required>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Opsi C <span class="text-danger">*</span></label>
-          <div class="input-group">
-            <span class="input-group-text">C</span>
-            <input type="text" class="form-control opsi-c" placeholder="Jawaban C" required>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Opsi D <span class="text-danger">*</span></label>
-          <div class="input-group">
-            <span class="input-group-text">D</span>
-            <input type="text" class="form-control opsi-d" placeholder="Jawaban D" required>
-          </div>
-        </div>
-      </div>
-      
-      <div class="mt-3">
-        <label class="form-label">Jawaban Benar <span class="text-danger">*</span></label>
-        <select class="form-select jawaban-benar" required>
-          <option value="">Pilih jawaban benar</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-          <option value="D">D</option>
-        </select>
-      </div>
-    </div>
+  <div class="mb-3">
+    <label for="deskripsi" class="form-label">Deskripsi Kuis</label>
+    <textarea class="form-control" id="deskripsi" name="deskripsi" required></textarea>
   </div>
-</script>
+  <div class="mb-3">
+    <label for="gambar" class="form-label">Gambar Kuis</label>
+    <input type="file" class="form-control" id="gambar" name="gambar" accept="image/*">
+  </div>
+
+  <!-- Form untuk soal -->
+  <div class="mb-3">
+    <label for="pertanyaan1" class="form-label">Pertanyaan 1</label>
+    <input type="text" class="form-control" id="pertanyaan1" name="pertanyaan1" required>
+  </div>
+  <div class="mb-3">
+    <label for="opsi_a1" class="form-label">Opsi A</label>
+    <input type="text" class="form-control" id="opsi_a1" name="opsi_a1" required>
+  </div>
+  <div class="mb-3">
+    <label for="opsi_b1" class="form-label">Opsi B</label>
+    <input type="text" class="form-control" id="opsi_b1" name="opsi_b1" required>
+  </div>
+  <div class="mb-3">
+    <label for="opsi_c1" class="form-label">Opsi C</label>
+    <input type="text" class="form-control" id="opsi_c1" name="opsi_c1" required>
+  </div>
+  <div class="mb-3">
+    <label for="opsi_d1" class="form-label">Opsi D</label>
+    <input type="text" class="form-control" id="opsi_d1" name="opsi_d1" required>
+  </div>
+  <div class="mb-3">
+    <label for="jawaban_benar1" class="form-label">Jawaban Benar</label>
+    <input type="text" class="form-control" id="jawaban_benar1" name="jawaban_benar1" required>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Simpan Kuis</button>
+</form>
+
+
 
 
 <!-- Footer -->
@@ -752,200 +643,6 @@ $result = mysqli_query($conn, $sql);
 </footer>
 
 
-<!-- JavaScript untuk Menangani Pertanyaan -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Tambah Soal Baru
-  document.getElementById('tambahSoalBtn').addEventListener('click', function() {
-    const soalContainer = document.getElementById('soalContainer');
-    const soalCount = soalContainer.children.length + 1;
-    
-    const newSoal = `
-      <div class="soal-item card mb-3">
-        <div class="card-header bg-light d-flex justify-content-between">
-          <span class="fw-bold">Soal #${soalCount}</span>
-          <button type="button" class="btn btn-sm btn-danger hapus-soal">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-        <div class="card-body">
-          <div class="mb-3">
-            <label class="form-label">Pertanyaan <span class="text-danger">*</span></label>
-            <input type="text" class="form-control pertanyaan" required>
-          </div>
-          <div class="row g-2">
-            <div class="col-md-6">
-              <label class="form-label">Opsi A <span class="text-danger">*</span></label>
-              <input type="text" class="form-control opsi" data-opsi="a" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Opsi B <span class="text-danger">*</span></label>
-              <input type="text" class="form-control opsi" data-opsi="b" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Opsi C <span class="text-danger">*</span></label>
-              <input type="text" class="form-control opsi" data-opsi="c" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Opsi D <span class="text-danger">*</span></label>
-              <input type="text" class="form-control opsi" data-opsi="d" required>
-            </div>
-          </div>
-          <div class="mt-3">
-            <label class="form-label">Jawaban Benar <span class="text-danger">*</span></label>
-            <select class="form-select jawaban-benar" required>
-              <option value="">Pilih Jawaban</option>
-              <option value="a">A</option>
-              <option value="b">B</option>
-              <option value="c">C</option>
-              <option value="d">D</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    soalContainer.insertAdjacentHTML('beforeend', newSoal);
-  });
-
-  // Hapus Soal
-  document.getElementById('soalContainer').addEventListener('click', function(e) {
-    if (e.target.closest('.hapus-soal')) {
-      e.target.closest('.soal-item').remove();
-      updateNomorSoal();
-    }
-  });
-
-  // Update Nomor Soal
-  function updateNomorSoal() {
-    const soalItems = document.querySelectorAll('.soal-item');
-    soalItems.forEach((item, index) => {
-      item.querySelector('.card-header span').textContent = `Soal #${index + 1}`;
-    });
-  }
-
-  // Simpan Kuis
-  document.getElementById('simpanKuisBtn').addEventListener('click', function() {
-    const judul = document.getElementById('judulKuis').value;
-    const deskripsi = document.getElementById('deskripsiKuis').value;
-    const soalItems = document.querySelectorAll('.soal-item');
-
-    // Validasi
-    if (!judul) {
-      alert('Judul kuis harus diisi!');
-      return;
-    }
-
-    if (soalItems.length === 0) {
-      alert('Tambahkan minimal 1 soal!');
-      return;
-    }
-
-    // Kumpulkan Data
-    const kuisData = {
-      judul: judul,
-      deskripsi: deskripsi,
-      soal: []
-    };
-
-    let isValid = true;
-    soalItems.forEach((item, index) => {
-      const pertanyaan = item.querySelector('.pertanyaan').value;
-      const opsiA = item.querySelector('.opsi[data-opsi="a"]').value;
-      const opsiB = item.querySelector('.opsi[data-opsi="b"]').value;
-      const opsiC = item.querySelector('.opsi[data-opsi="c"]').value;
-      const opsiD = item.querySelector('.opsi[data-opsi="d"]').value;
-      const jawabanBenar = item.querySelector('.jawaban-benar').value;
-
-      if (!pertanyaan || !opsiA || !opsiB || !opsiC || !opsiD || !jawabanBenar) {
-        isValid = false;
-        alert(`Soal #${index + 1} belum lengkap!`);
-        return;
-      }
-
-      kuisData.soal.push({
-        pertanyaan: pertanyaan,
-        opsi_a: opsiA,
-        opsi_b: opsiB,
-        opsi_c: opsiC,
-        opsi_d: opsiD,
-        jawaban_benar: jawabanBenar
-      });
-    });
-
-    if (!isValid) return;
-
-    // Kirim ke Server (AJAX)
-    fetch('simpan_kuis.php', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(kuisData)
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        alert('Kuis berhasil disimpan!');
-        $('#tambahKuisModal').modal('hide');
-        location.reload(); // Refresh halaman
-      } else {
-        alert('Gagal menyimpan: ' + (data.error || 'Unknown error'));
-      }
-    })
-    .catch(error => {
-      alert('Error: ' + error.message);
-    });
-  });
-});
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Preview gambar yang dipilih
-  document.getElementById('gambarKuis').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        document.getElementById('previewImage').src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-
-  // Kode lainnya (tambah soal, hapus soal, dll.)
-  // ... [kode JavaScript sebelumnya yang sudah ada] ...
-  
-  // Update fungsi simpan untuk handle gambar
-  document.getElementById('simpanKuisBtn').addEventListener('click', function() {
-    const formData = new FormData();
-    const imageFile = document.getElementById('gambarKuis').files[0];
-    
-    if (imageFile) {
-      formData.append('gambar', imageFile);
-    }
-    
-    // Tambahkan data lainnya ke formData
-    formData.append('judul', document.getElementById('judulKuis').value);
-    formData.append('deskripsi', document.getElementById('deskripsiKuis').value);
-    
-    // Kirim ke server
-    fetch('simpan_kuis.php', {
-      method: 'POST',
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        alert('Kuis berhasil disimpan!');
-        $('#tambahKuisModal').modal('hide');
-        location.reload();
-      }
-    });
-  });
-});
-</script>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

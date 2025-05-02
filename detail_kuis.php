@@ -2,55 +2,63 @@
 include 'koneksi.php';
 
 if (!isset($_GET['id'])) {
-    echo "Kuis tidak ditemukan.";
-    exit;
+  echo "ID kuis tidak ditemukan.";
+  exit;
 }
 
-$id_kuis = (int)$_GET['id'];
+$id_kuis = intval($_GET['id']);
 
 // Ambil data kuis
 $kuis = mysqli_query($conn, "SELECT * FROM kuis WHERE id = $id_kuis");
 $data_kuis = mysqli_fetch_assoc($kuis);
-
-// Ambil soal
-$soal = mysqli_query($conn, "SELECT * FROM soal WHERE id_kuis = $id_kuis");
-$daftar_soal = [];
-while ($row = mysqli_fetch_assoc($soal)) {
-    $daftar_soal[] = $row;
+if (!$data_kuis) {
+  echo "Kuis tidak ditemukan.";
+  exit;
 }
+
+// Ambil semua soal untuk kuis ini
+$soal = mysqli_query($conn, "SELECT * FROM soal WHERE id_kuis = $id_kuis");
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title><?= $data_kuis['judul'] ?></title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title><?= htmlspecialchars($data_kuis['judul']) ?></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 p-6">
-  <div class="max-w-3xl mx-auto bg-white shadow-md rounded-xl p-6">
-    <h2 class="text-2xl font-bold text-indigo-700 mb-4"><?= $data_kuis['judul'] ?></h2>
-    <p class="mb-6 text-gray-600"><?= $data_kuis['deskripsi'] ?></p>
+<body class="container py-4">
+  <h2><?= htmlspecialchars($data_kuis['judul']) ?></h2>
+  <p><?= nl2br(htmlspecialchars($data_kuis['deskripsi'])) ?></p>
 
-    <form action="hasil_kuis.php" method="post">
-      <?php foreach ($daftar_soal as $index => $s): ?>
-        <div class="mb-6">
-          <p class="font-semibold mb-2"><?= ($index + 1) ?>. <?= $s['pertanyaan'] ?></p>
+  <form method="post" action="hasil_kuis.php">
+    <input type="hidden" name="id_kuis" value="<?= $id_kuis ?>">
 
-          <?php foreach (['a', 'b', 'c', 'd'] as $opsi): ?>
-            <label class="block mb-1">
-              <input type="radio" name="answers[<?= $index ?>]" value="<?= strtoupper($opsi) ?>" class="mr-2">
-              <?= $s['{"opsi_" . $opsi}'] ?>
-            </label>
-          <?php endforeach; ?>
+    <?php
+    $no = 1;
+    while ($s = mysqli_fetch_assoc($soal)) :
+    ?>
+      <div class="mb-4">
+        <strong><?= $no++ ?>. <?= htmlspecialchars($s['pertanyaan']) ?></strong>
+        <div class="form-check">
+          <input type="radio" name="jawaban[<?= $s['id'] ?>]" value="A" class="form-check-input" id="a<?= $s['id'] ?>">
+          <label class="form-check-label" for="a<?= $s['id'] ?>"><?= htmlspecialchars($s['opsi_a']) ?></label>
         </div>
-      <?php endforeach; ?>
+        <div class="form-check">
+          <input type="radio" name="jawaban[<?= $s['id'] ?>]" value="B" class="form-check-input" id="b<?= $s['id'] ?>">
+          <label class="form-check-label" for="b<?= $s['id'] ?>"><?= htmlspecialchars($s['opsi_b']) ?></label>
+        </div>
+        <div class="form-check">
+          <input type="radio" name="jawaban[<?= $s['id'] ?>]" value="C" class="form-check-input" id="c<?= $s['id'] ?>">
+          <label class="form-check-label" for="c<?= $s['id'] ?>"><?= htmlspecialchars($s['opsi_c']) ?></label>
+        </div>
+        <div class="form-check">
+          <input type="radio" name="jawaban[<?= $s['id'] ?>]" value="D" class="form-check-input" id="d<?= $s['id'] ?>">
+          <label class="form-check-label" for="d<?= $s['id'] ?>"><?= htmlspecialchars($s['opsi_d']) ?></label>
+        </div>
+      </div>
+    <?php endwhile; ?>
 
-      <input type="hidden" name="id_kuis" value="<?= $id_kuis ?>">
-      <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-        Kirim Jawaban
-      </button>
-    </form>
-  </div>
+    <button type="submit" class="btn btn-success">Selesai</button>
+  </form>
 </body>
 </html>

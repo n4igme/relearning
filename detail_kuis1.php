@@ -1,130 +1,69 @@
 <?php
-session_start();
 include 'koneksi.php';
 
 // Ambil ID kuis dari URL
-$id_kuis = isset($_GET['id_kuis']) ? (int)$_GET['id_kuis'] : 1;
+$id_kuis = $_GET['id'];
 
-$sql = "SELECT * FROM soal WHERE id_kuis = $id_kuis ORDER BY id ASC";
-$result = mysqli_query($conn, $sql);
-$questions = [];
+// Query untuk mengambil data kuis
+$sql_kuis = "SELECT * FROM kuis WHERE id = ?";
+$stmt_kuis = mysqli_prepare($conn, $sql_kuis);
+mysqli_stmt_bind_param($stmt_kuis, "i", $id_kuis);
+mysqli_stmt_execute($stmt_kuis);
+$result_kuis = mysqli_stmt_get_result($stmt_kuis);
+$kuis = mysqli_fetch_assoc($result_kuis);
 
-while ($row = mysqli_fetch_assoc($result)) {
-    $questions[] = [
-        'question' => $row['pertanyaan'],
-        'options' => [
-            'A' => $row['opsi_a'],
-            'B' => $row['opsi_b'],
-            'C' => $row['opsi_c'],
-            'D' => $row['opsi_d']
-        ],
-        'correct' => $row['jawaban_benar']
-    ];
+// Cek apakah kuis ditemukan
+if (!$kuis) {
+    echo "Kuis tidak ditemukan.";
+    exit;
 }
 
-$totalQuestions = count($questions);
-$currentQuestion = isset($_GET['q']) ? (int)$_GET['q'] : 0;
-
-if ($totalQuestions === 0) {
-    echo "Tidak ada soal untuk kuis ini.";
-    exit();
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $_SESSION['answers'][$id_kuis][$currentQuestion] = $_POST['answer'] ?? null;
-
-    if (isset($_POST['next'])) {
-        header("Location: ?id_kuis=$id_kuis&q=" . ($currentQuestion + 1));
-        exit();
-    } elseif (isset($_POST['prev'])) {
-        header("Location: ?id_kuis=$id_kuis&q=" . ($currentQuestion - 1));
-        exit();
-    } elseif (isset($_POST['submit'])) {
-        $_SESSION['questions'][$id_kuis] = $questions;
-        header("Location: result.php?id_kuis=$id_kuis");
-        exit();
-    }
-}
-
-$currentQuestion = max(0, min($currentQuestion, $totalQuestions - 1));
+// Query untuk mengambil soal kuis
+$sql_soal = "SELECT * FROM soal WHERE id_kuis = ?";
+$stmt_soal = mysqli_prepare($conn, $sql_soal);
+mysqli_stmt_bind_param($stmt_soal, "i", $id_kuis);
+mysqli_stmt_execute($stmt_soal);
+$result_soal = mysqli_stmt_get_result($stmt_soal);
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Detail Kuis</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    function validateForm() {
-      const radios = document.querySelectorAll('input[name="answer"]');
-      let valid = false;
-      radios.forEach(radio => { if (radio.checked) valid = true; });
-      if (!valid) {
-        alert("Silakan pilih jawaban terlebih dahulu.");
-      }
-      return valid;
-    }
-  </script>
+    <meta charset="UTF-8">
+    <title>Detail Kuis - <?= htmlspecialchars($kuis['judul']) ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+<body>
+    <div class="container py-5">
+        <h2 class="text-center"><?= htmlspecialchars($kuis['judul']) ?></h2>
+        <p class="text-center text-muted"><?= htmlspecialchars($kuis['deskripsi']) ?></p>
 
-<div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8">
-
-  <div class="flex justify-between items-center mb-8">
-    <h1 class="text-2xl font-bold text-blue-600">Kuis Pemrogaraman Dasar <?= $id_kuis ?></h1>
-    <span class="text-gray-600"><?= ($currentQuestion + 1) ?> / <?= $totalQuestions ?></span>
-  </div>
-
-  <div class="w-full bg-gray-300 rounded-full h-2.5 mb-8">
-    <div class="bg-blue-500 h-2.5 rounded-full" style="width: <?= (($currentQuestion + 1) / $totalQuestions) * 100 ?>%"></div>
-  </div>
-
-  <form method="post" action="?id_kuis=<?= $id_kuis ?>&q=<?= $currentQuestion ?>" onsubmit="return validateForm()" class="space-y-6">
-    <div>
-      <h2 class="text-xl font-semibold text-gray-800 mb-6">
-        <?= htmlspecialchars($questions[$currentQuestion]['question']) ?>
-      </h2>
-
-      <?php foreach ($questions[$currentQuestion]['options'] as $key => $option): ?>
-        <div class="flex items-center mb-4">
-          <input 
-            type="radio" 
-            id="option_<?= $key ?>" 
-            name="answer" 
-            value="<?= $key ?>" 
-            class="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300"
-            <?= (isset($_SESSION['answers'][$id_kuis][$currentQuestion]) && $_SESSION['answers'][$id_kuis][$currentQuestion] === $key) ? 'checked' : '' ?>
-          >
-          <label for="option_<?= $key ?>" class="ml-3 text-gray-700 text-lg">
-            <?= $key ?>. <?= htmlspecialchars($option) ?>
-          </label>
+        <!-- Gambar Kuis -->
+        <div class="text-center mb-4">
+            <img src="images/<?= htmlspecialchars($kuis['gambar']) ?>" class="img-fluid rounded shadow" style="max-height: 400px;">
         </div>
-      <?php endforeach; ?>
+
+        <h3>Soal Kuis</h3>
+        <div class="list-group">
+            <?php while ($soal = mysqli_fetch_assoc($result_soal)): ?>
+                <div class="list-group-item">
+                    <h5><?= htmlspecialchars($soal['pertanyaan']) ?></h5>
+                    <ul>
+                        <li><?= htmlspecialchars($soal['opsi_a']) ?></li>
+                        <li><?= htmlspecialchars($soal['opsi_b']) ?></li>
+                        <li><?= htmlspecialchars($soal['opsi_c']) ?></li>
+                        <li><?= htmlspecialchars($soal['opsi_d']) ?></li>
+                    </ul>
+                    <p><strong>Jawaban Benar:</strong> <?= htmlspecialchars($soal['jawaban_benar']) ?></p>
+                </div>
+            <?php endwhile; ?>
+        </div>
+
+        <div class="mt-5 text-center">
+            <a href="info.php" class="btn btn-secondary">Kembali</a>
+        </div>
     </div>
 
-    <div class="flex justify-between mt-8">
-      <?php if ($currentQuestion > 0): ?>
-        <button name="prev" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
-          Sebelumnya
-        </button>
-      <?php else: ?>
-        <div></div>
-      <?php endif; ?>
-
-      <?php if ($currentQuestion < $totalQuestions - 1): ?>
-        <button name="next" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-          Selanjutnya
-        </button>
-      <?php else: ?>
-        <button name="submit" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-          Selesai
-        </button>
-      <?php endif; ?>
-    </div>
-  </form>
-
-</div>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
