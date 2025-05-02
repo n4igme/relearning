@@ -1,7 +1,7 @@
 <?php
-$host = "localhost";
+$host = "db";
 $user = "root";
-$pass = "";
+$pass = "root";
 $db   = "simpan_mt"; // ganti sesuai nama database kamu
 
 $conn = mysqli_connect($host, $user, $pass, $db);
