@@ -1,8 +1,8 @@
 <?php
-$host = "db";
+$host = "localhost";
 $user = "root";
-$pass = "root";
-$db   = "simpan_mt"; // ganti sesuai nama database kamu
+$pass = "";
+$db   = "db_relearning"; // ganti sesuai nama database kamu
 
 $conn = mysqli_connect($host, $user, $pass, $db);
 
