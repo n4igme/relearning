@@ -89,14 +89,31 @@ The collection includes all API endpoints organized by functionality:
 - `/api/student/quests/:questId/attempt` - Submit quest attempts
 
 ## 📚 Sample Endpoints
-- Full-Stack Web Development Bootcamp: `692af3885b9c0c4daf2c6e3a`
-- Learn Page: `http://localhost:3000/learn/692af3885b9c0c4daf2c6e3a`
+- Full-Stack Web Development Bootcamp: `692b260e5815c17df23c6e10`
+ - Mobile App Development with React Native: `692b260e5815c17df23c6e20`
+ - Machine Learning with Python: `692b260e5815c17df23c6e19`
+- Learn Page: `http://localhost:3000/learn/692b260e5815c17df23c6e10`
 
 ## 🧪 Testing Workflow
 1. Login with desired role
 2. Access appropriate endpoints
 3. Test functionality based on role permissions
 4. Use the student dashboard to track learning progress
+5. Test the complete materials workflow: enroll → complete materials → take quest → earn certificate
+
+## 📚 Materials-Based Learning System
+- **Bab/Sub-Bab Structure**: Test course materials organized as main topics (Bab) with detailed content (Sub-Bab)
+- **Progress Tracking**: Verify individual completion tracking for each sub-material with aggregate progress calculation
+- **Gate-Controlled Assessments**: Test that quests are only accessible after 100% material completion
+- **Certificate System**: Verify certificates are issued upon successful quest completion
+
+## 🔄 Complete Learning Flow Testing
+1. Student enrolls in a course
+2. Access materials with `GET /api/student/courses/:courseId/materials`
+3. Complete sub-materials with `POST /api/student/courses/:courseId/materials/complete`
+4. Verify progress updates and quest accessibility
+5. Take and pass the quest
+6. Verify certificate generation
 
 ## ⚙️ Additional Notes
 - All endpoints require proper authentication except public course browsing

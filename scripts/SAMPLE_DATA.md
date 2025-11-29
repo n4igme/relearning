@@ -14,6 +14,8 @@
 | Student | `maria.garcia@student.com`     | `student123`|
 | Student | `david.kim@student.com`        | `student123`|
 | Student | `emma.wilson@student.com`      | `student123`|
+| Student | `james.williams@student.com`   | `student123`|
+| Student | `sarah.brown@student.com`      | `student123`|
 
 ---
 
@@ -30,7 +32,7 @@
 #### Materials (Bab):
 1. **Bab 1: Introduction to Web Development**
    - **Description**: Basics of web development and setting up your environment
-   
+
    **Sub-Materials (Sub-bab):**
    - 1.1 Course Overview (Video, 20 min)
    - 1.2 Setting up Development Environment (Article, 30 min)
@@ -38,7 +40,7 @@
 
 2. **Bab 2: HTML & CSS Fundamentals**
    - **Description**: Learn the foundational building blocks of web development
-   
+
    **Sub-Materials (Sub-bab):**
    - 2.1 HTML Basics (Article, 45 min)
    - 2.2 Advanced HTML Elements (Video, 30 min)
@@ -47,7 +49,7 @@
 
 3. **Bab 3: JavaScript Essentials**
    - **Description**: Master the fundamentals of JavaScript programming language
-   
+
    **Sub-Materials (Sub-bab):**
    - 3.1 JavaScript Syntax and Variables (Video, 35 min)
    - 3.2 Functions and Scope (Article, 30 min)
@@ -56,7 +58,7 @@
 
 4. **Bab 4: React.js for Frontend**
    - **Description**: Build modern user interfaces with React
-   
+
    **Sub-Materials (Sub-bab):**
    - 4.1 React Components (Video, 45 min)
    - 4.2 State and Props (Article, 40 min)
@@ -65,7 +67,7 @@
 
 5. **Bab 5: Node.js & Express Backend**
    - **Description**: Create RESTful APIs with Node.js and Express
-   
+
    **Sub-Materials (Sub-bab):**
    - 5.1 Introduction to Node.js (Video, 30 min)
    - 5.2 Express Framework Basics (Article, 45 min)
@@ -73,7 +75,7 @@
 
 6. **Bab 6: MongoDB Database**
    - **Description**: Database management with MongoDB and Mongoose
-   
+
    **Sub-Materials (Sub-bab):**
    - 6.1 MongoDB Fundamentals (Article, 40 min)
    - 6.2 Mongoose ODM (Video, 35 min)
@@ -89,7 +91,7 @@
 #### Materials (Bab):
 1. **Bab 1: Introduction to Machine Learning**
    - **Description**: Overview of machine learning concepts and applications
-   
+
    **Sub-Materials (Sub-bab):**
    - 1.1 What is Machine Learning? (Video, 30 min)
    - 1.2 Types of Machine Learning (Article, 25 min)
@@ -97,7 +99,7 @@
 
 2. **Bab 2: Python for Data Science**
    - **Description**: Essential Python libraries for data science and ML
-   
+
    **Sub-Materials (Sub-bab):**
    - 2.1 NumPy and Pandas (Video, 45 min)
    - 2.2 Data Visualization with Matplotlib (Article, 40 min)
@@ -105,7 +107,7 @@
 
 3. **Bab 3: Supervised Learning**
    - **Description**: Learn classification and regression algorithms
-   
+
    **Sub-Materials (Sub-bab):**
    - 3.1 Linear Regression (Article, 50 min)
    - 3.2 Classification Algorithms (Video, 55 min)
@@ -113,7 +115,7 @@
 
 4. **Bab 4: Deep Learning Basics**
    - **Description**: Introduction to neural networks and deep learning
-   
+
    **Sub-Materials (Sub-bab):**
    - 4.1 Neural Network Fundamentals (Video, 60 min)
    - 4.2 Deep Learning with TensorFlow (Article, 70 min)
@@ -130,14 +132,14 @@
 #### Materials (Bab):
 1. **Bab 1: Introduction to React Native**
    - **Description**: Getting started with React Native development
-   
+
    **Sub-Materials (Sub-bab):**
    - 1.1 What is React Native? (Video, 25 min)
    - 1.2 Setting up Environment (Article, 35 min)
 
 2. **Bab 2: React Native Components**
    - **Description**: Core components and UI elements in React Native
-   
+
    **Sub-Materials (Sub-bab):**
    - 2.1 Basic Components (Video, 40 min)
    - 2.2 Touchables and Lists (Article, 45 min)
@@ -145,14 +147,14 @@
 
 3. **Bab 3: Navigation & Routing**
    - **Description**: Navigate between screens in your React Native app
-   
+
    **Sub-Materials (Sub-bab):**
    - 3.1 Stack Navigator (Article, 30 min)
    - 3.2 Tab Navigator (Video, 35 min)
 
 4. **Bab 4: State Management**
    - **Description**: Managing app state in React Native applications
-   
+
    **Sub-Materials (Sub-bab):**
    - 4.1 React Native State (Article, 40 min)
    - 4.2 Context API (Video, 45 min)
@@ -204,12 +206,20 @@
      - True (Correct)
      - False
 
+### 4. React Native Components Quiz
+- **Course**: Mobile App Development with React Native
+- **Description**: Test your knowledge of React Native components.
+- **Passing Score**: 70
+- **Time Limit**: 25 minutes
+- **Questions**: Multiple choice, short answer, and true/false
+
 ---
 
 ## Certificates
 
 - **Alex Johnson** received a certificate for the "Full-Stack Web Development Bootcamp" with a score of 95 (Grade A+) after completing all materials and passing the quest.
 - **Maria Garcia** received a certificate for the "Machine Learning with Python" with a score of 92 (Grade A) after completing all materials and passing the quest.
+- **David Kim** received a certificate for the "Mobile App Development with React Native" with a score of 88 (Grade B+) after completing all materials and passing the quest.
 
 ---
 
@@ -222,33 +232,113 @@
 
 ---
 
-## Student Progress Examples
+## Updated Student Progress Examples (Including All Scenarios)
 
-### Example 1: Alex Johnson's Progress in Full-Stack Web Development Bootcamp
+### Example 1: Alex Johnson - Complete Course (Certificate Issued)
+- **Course**: Full-Stack Web Development Bootcamp
 - **Materials Completion Status**:
   - Bab 1: Introduction to Web Development - 100% (completed all 3 sub-materials)
-  - Bab 2: HTML & CSS Fundamentals - 75% (3 of 4 sub-materials completed)
+  - Bab 2: HTML & CSS Fundamentals - 100% (completed all 4 sub-materials)
+  - Bab 3: JavaScript Essentials - 100% (completed all 4 sub-materials)
+  - Bab 4: React.js for Frontend - 100% (completed all 4 sub-materials)
+  - Bab 5: Node.js & Express Backend - 100% (completed all 3 sub-materials)
+  - Bab 6: MongoDB Database - 100% (completed all 2 sub-materials)
+- **Progress**: 100% (20 of 20 total sub-materials completed)
+- **Quest Status**: Attempted and passed (score: 95/100)
+- **Certificate**: Awarded with grade A+
+
+### Example 2: Maria Garcia - In-progress, Materials Complete, Quest Passed
+- **Course**: Machine Learning with Python
+- **Materials Completion Status**:
+  - Bab 1: Introduction to Machine Learning - 100% (completed all 3 sub-materials)
+  - Bab 2: Python for Data Science - 100% (completed all 3 sub-materials)
+  - Bab 3: Supervised Learning - 100% (completed all 3 sub-materials)
+  - Bab 4: Deep Learning Basics - 100% (completed all 3 sub-materials)
+- **Progress**: 100% (12 of 12 total sub-materials completed)
+- **Quest Status**: Attempted and passed (score: 92/100)
+- **Certificate**: Awarded with grade A
+
+### Example 3: David Kim - In-progress, Materials Complete, Quest Failed Once
+- **Course**: Mobile App Development with React Native
+- **Materials Completion Status**:
+  - Bab 1: Introduction to React Native - 100% (completed all 2 sub-materials)
+  - Bab 2: React Native Components - 100% (completed all 3 sub-materials)
+  - Bab 3: Navigation & Routing - 100% (completed all 2 sub-materials)
+  - Bab 4: State Management - 100% (completed all 2 sub-materials)
+- **Progress**: 100% (9 of 9 total sub-materials completed)
+- **Quest Status**: First attempt failed (score: 65/100), retry allowed
+- **Quest Attempts**: 2 total (failed once, passed second attempt)
+- **Certificate**: Awarded after second attempt (score: 88/100) with grade B+
+
+### Example 4: Sarah Brown - In-progress, Materials Not Yet Complete
+- **Course**: Full-Stack Web Development Bootcamp
+- **Materials Completion Status**:
+  - Bab 1: Introduction to Web Development - 100% (completed all 3 sub-materials)
+  - Bab 2: HTML & CSS Fundamentals - 50% (2 of 4 sub-materials completed)
   - Bab 3: JavaScript Essentials - 0% (not started)
   - Bab 4: React.js for Frontend - 0% (not started)
   - Bab 5: Node.js & Express Backend - 0% (not started)
   - Bab 6: MongoDB Database - 0% (not started)
-- **Progress**: 37.5% (3 of 8 total sub-materials completed)
-- **Quest Status**: Locked until materials completion reaches 100%
+- **Progress**: 15% (5 of 20 total sub-materials completed)
+- **Quest Status**: Blocked until materials 100% complete
+- **Certificate**: Not eligible yet
 
-### Example 2: Maria Garcia's Progress in Machine Learning with Python
+### Example 5: James Williams - In-progress, Materials Near Completion
+- **Course**: Machine Learning with Python
 - **Materials Completion Status**:
   - Bab 1: Introduction to Machine Learning - 100% (completed all 3 sub-materials)
   - Bab 2: Python for Data Science - 100% (completed all 3 sub-materials)
   - Bab 3: Supervised Learning - 100% (completed all 3 sub-materials)
   - Bab 4: Deep Learning Basics - 67% (2 of 3 sub-materials completed)
-- **Progress**: 79.2% (11 of 14 total sub-materials completed)
-- **Quest Status**: Locked until materials completion reaches 100%
+- **Progress**: 75% (11 of 12 total sub-materials completed)
+- **Quest Status**: Blocked until materials 100% complete (requires 12 of 12)
+- **Certificate**: Not eligible yet
 
-### Example 3: David Kim's Progress in Mobile App Development with React Native
+### Example 6: Emma Wilson - Materials Complete, Quest Attempted But Failed
+- **Course**: Mobile App Development with React Native
 - **Materials Completion Status**:
   - Bab 1: Introduction to React Native - 100% (completed all 2 sub-materials)
-  - Bab 2: React Native Components - 50% (2 of 4 sub-materials completed)
-  - Bab 3: Navigation & Routing - 0% (not started)
-  - Bab 4: State Management - 0% (not started)
-- **Progress**: 20% (2 of 10 total sub-materials completed)
-- **Quest Status**: Locked until materials completion reaches 100%
+  - Bab 2: React Native Components - 100% (completed all 3 sub-materials)
+  - Bab 3: Navigation & Routing - 100% (completed all 2 sub-materials)
+  - Bab 4: State Management - 100% (completed all 2 sub-materials)
+- **Progress**: 100% (9 of 9 total sub-materials completed)
+- **Quest Status**: First attempt failed (score: 68/100), retry allowed
+- **Certificate**: Not eligible yet, quest must be passed (needs 70+)
+
+---
+
+## Additional Scenarios Demonstrated
+
+### Quest Retry Scenario
+- **Student**: Emma Wilson
+- **Course**: Mobile App Development with React Native
+- **Status**: Materials 100% complete, first quest attempt 68/100 (below passing score of 70)
+- **Allowable Action**: Student can retry the quest to achieve passing score
+- **Progress Tracking**: Materials remain 100% complete, quest attempts tracked separately
+
+### Failed Quest Recovery
+- **Student**: David Kim
+- **Course**: Mobile App Development with React Native
+- **Status**: First attempt failed (65/100), second attempt passed (88/100)
+- **Outcome**: Certificate awarded after successful retake
+- **Data Persistence**: Previous failed attempt recorded alongside successful one
+
+### Multiple Course Enrollment
+- **Student**: Alex Johnson
+- **Courses**: Multiple courses with different completion statuses
+- **Progress**: Full certificate in Full-Stack Web Development, enrolled in other courses
+
+### Progress-Dependent Learning Path
+- **Requirement**: Students cannot attempt quests until all course materials are completed
+- **Tracking**: Both materials progress and quest status maintained separately
+- **Access Control**: Quest unlocked when materialsProgress = 100%
+
+### Enrollment and Completion Flow
+- **Step 1**: Student enrolls in course
+- **Step 2**: Student progresses through materials (Bab/Sub-Bab structure)
+- **Step 3**: When materials = 100%, quest becomes available
+- **Step 4**: Student attempts and passes quest (≥ passingScore)
+- **Step 5**: Certificate generated automatically
+- **Step 6**: Course marked as completed
+
+This updated sample data now comprehensively covers all scenarios described in the MATERIALS_API.md document, including materials tracking, progress requirements, quest prerequisites, certificate generation, and failure recovery paths.
