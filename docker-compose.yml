@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-secretpassword}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-SimpleMongoPassword123}
       MONGO_INITDB_DATABASE: elearning
     ports:
       - "27017:27017"
@@ -34,7 +34,7 @@ services:
       mongodb:
         condition: service_healthy
     environment:
-      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:ReLe%40rN1ng_M0ng0_D8_P%40ssw0rd_2025!@mongodb:27017/elearning?authSource=admin}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:SimpleMongoPassword123@mongodb:27017/elearning?authSource=admin}
     networks:
       - elearning-network
     command: ["node", "scripts/seedData.js"]
@@ -52,7 +52,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:ReLe%40rN1ng_M0ng0_D8_P%40ssw0rd_2025!@mongodb:27017/elearning?authSource=admin}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:SimpleMongoPassword123@mongodb:27017/elearning?authSource=admin}
       JWT_SECRET: ${JWT_SECRET:-change_this_to_a_secure_secret_key}
       JWT_EXPIRE: ${JWT_EXPIRE:-7d}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-your_stripe_secret_key}

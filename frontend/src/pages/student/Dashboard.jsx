@@ -126,7 +126,7 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                   <Link
-                    to={`/courses/${enrollment.course._id}`}
+                    to={`/learn/${enrollment.course._id}`}
                     className="btn btn-primary mt-4 w-full"
                   >
                     Continue Learning
