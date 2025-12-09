@@ -40,6 +40,12 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
+  verifyEmail: (token) => api.get(`/auth/verify-email/${token}`),
+  resendVerification: (data) => api.post('/auth/resend-verification', data),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (token, data) => api.post(`/auth/reset-password/${token}`, data),
+  refreshToken: () => api.post('/auth/refresh-token'),
+  logout: () => api.post('/auth/logout'),
 };
 
 // Courses API
@@ -72,7 +78,7 @@ export const studentAPI = {
   enroll: (courseId) => api.post(`/student/enroll/${courseId}`),
   getEnrolledCourses: () => api.get('/student/courses'),
   getCourseMaterials: (courseId) => api.get(`/student/courses/${courseId}/materials`),
-  completeMaterial: (courseId, materialId, subMaterialId) => 
+  completeMaterial: (courseId, materialId, subMaterialId) =>
     api.post(`/student/courses/${courseId}/materials/complete`, { materialId, subMaterialId }),
   updateProgress: (courseId, progress) =>
     api.put(`/student/courses/${courseId}/progress`, { progress }),
@@ -82,6 +88,32 @@ export const studentAPI = {
   getCertificates: () => api.get('/student/certificates'),
   getCertificate: (id) => api.get(`/student/certificates/${id}`),
   getPayments: () => api.get('/student/payments'),
+};
+
+// Progress API
+export const progressAPI = {
+  getEnrollmentProgress: (enrollmentId) => api.get(`/progress/${enrollmentId}/progress`),
+  getStudentCourseProgress: (courseId) => api.get(`/progress/student/courses/${courseId}/progress`),
+  markMaterialComplete: (materialId) => api.post(`/progress/materials/${materialId}/complete`),
+  updateCourseProgress: (courseId, data) => api.post(`/progress/student/courses/${courseId}/progress`, data),
+};
+
+// Certificates API
+export const certificatesAPI = {
+  generateCertificate: (data) => api.post('/certificates', data),
+  getMyCertificates: () => api.get('/certificates/my-certificates'),
+  getCertificate: (id) => api.get(`/certificates/${id}`),
+  verifyCertificate: (certificateNumber) => api.get(`/certificates/verify/${certificateNumber}`),
+};
+
+// Enrollments API
+export const enrollmentsAPI = {
+  create: (data) => api.post('/enrollments', data),
+  getMyEnrollments: () => api.get('/enrollments/my-courses'),
+  getEnrollment: (id) => api.get(`/enrollments/${id}`),
+  initiatePayment: (id) => api.post(`/enrollments/${id}/initiate-payment`),
+  confirmPayment: (id, data) => api.post(`/enrollments/${id}/confirm-payment`, data),
+  getPaymentHistory: () => api.get('/enrollments/payments'),
 };
 
 // Admin API

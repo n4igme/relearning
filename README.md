@@ -9,6 +9,14 @@ A comprehensive full-stack eLearning management system with React frontend, Node
 - **Mentor**: Create courses and assessments, propose pricing (requires admin approval)
 - **Student**: Enroll in courses, complete materials and quests, earn certificates, participate in forums
 
+### User Management System
+- **3-Role System**: Admin, Mentor, Student with role-based access control
+- **Admin Approval Required**: All registrations require admin approval
+- **Email Verification**: Mandatory email verification for account activation
+- **Password Reset**: Secure password reset with email verification
+- **JWT Authentication**: With refresh tokens and HTTP-only cookies
+- **Account Status Management**: Activate/deactivate and approval status control
+
 ### Complete Learning Flow
 - **Student Enrollment**: Students can enroll in courses through the platform
 - **Material Completion**: Students progress through babs and sub-babs incrementally (0% → 100%)
@@ -18,21 +26,21 @@ A comprehensive full-stack eLearning management system with React frontend, Node
 - **Certificate Issuance**: Successful quest completion triggers automatic certificate generation
 
 ### Learning Progression Structure
-- **Bab/Sub-bab Organization**: Course materials structured as main topics (Bab) with detailed content (Sub-bab)
-- **Progress Tracking**: Individual completion tracking for each sub-bab with aggregate progress calculation
+- **Course** contains **Materials (Bab - Chapter)** which contain **SubMaterials (Sub-Bab)**
+- **Progress Tracking**: Individual completion tracking for each sub-material
 - **Gate-Controlled Assessments**: Quests only accessible after 100% material completion
 - **Certification System**: Certificates issued upon successful quest completion
 - **Role-based Access**: Separate interfaces for Admin, Mentor, and Student roles
 
 ### Additional Core Functionality
-- JWT-based authentication with role-based access control
-- Course management with approval workflow
-- Quest system with multiple question types (multiple-choice, true/false, short-answer)
-- Stripe payment integration
-- Q&A forum with voting system
-- Real-time progress tracking
-- Certificate generation system
-- Rich content management system
+- **JWT-based authentication** with role-based access control
+- **Course management** with approval workflow
+- **Quest system** with multiple question types (multiple-choice, true/false, short-answer)
+- **Payment integration** with Stripe and Midtrans backup
+- **Q&A forum** with voting system
+- **Real-time progress tracking**
+- **Certificate generation system** with verification
+- **Rich content management system**
 
 ## 🛠 Tech Stack
 
@@ -47,9 +55,12 @@ A comprehensive full-stack eLearning management system with React frontend, Node
 ### Backend
 - **Runtime**: Node.js + Express.js
 - **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT (JSON Web Tokens)
-- **Payment**: Stripe
-- **Security**: bcryptjs for password hashing
+- **Authentication**: JWT (JSON Web Tokens) with refresh tokens
+- **Payment**: Stripe with Midtrans backup
+- **Security**: bcryptjs for password hashing, Helmet.js for security headers
+- **File Upload**: Multer with validation
+- **Rate Limiting**: express-rate-limit
+- **Validation**: express-validator
 
 ### DevOps
 - **Containerization**: Docker + Docker Compose
@@ -67,7 +78,7 @@ A comprehensive full-stack eLearning management system with React frontend, Node
 ```bash
 # 1. Configure environment
 cp .env.docker .env
-# Edit .env and update: MONGO_ROOT_PASSWORD, JWT_SECRET, STRIPE_SECRET_KEY
+# Edit .env and update: MONGO_ROOT_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET, STRIPE_SECRET_KEY
 
 # 2. Start services
 docker-compose up --build -d
@@ -190,8 +201,14 @@ After deployment, the database is seeded with sample data:
 ### Authentication
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login user |
+| POST | `/api/auth/register` | Register new user (requires admin approval) |
+| POST | `/api/auth/login` | Login user (must be approved and email verified) |
+| POST | `/api/auth/refresh-token` | Refresh JWT token using cookie |
+| POST | `/api/auth/logout` | Logout user (clears refresh token cookie) |
+| GET | `/api/auth/verify-email/:token` | Verify user email |
+| POST | `/api/auth/resend-verification` | Resend email verification |
+| POST | `/api/auth/forgot-password` | Request password reset |
+| POST | `/api/auth/reset-password/:token` | Reset password with token |
 | GET | `/api/auth/me` | Get current user |
 | PUT | `/api/auth/profile` | Update profile |
 
@@ -207,7 +224,11 @@ After deployment, the database is seeded with sample data:
 | GET | `/api/admin/quests/pending` | Get pending quests |
 | PUT | `/api/admin/quests/:id/approve` | Approve quest |
 | GET | `/api/admin/users` | Get all users |
+| GET | `/api/admin/users/:id` | Get specific user |
 | PUT | `/api/admin/users/:id/role` | Update user role |
+| PUT | `/api/admin/users/:id/approval` | Update user approval status |
+| PUT | `/api/admin/users/:id/toggle-activation` | Activate/deactivate user |
+| DELETE | `/api/admin/users/:id` | Delete user |
 
 ### Courses
 | Method | Endpoint | Description |
@@ -224,12 +245,10 @@ After deployment, the database is seeded with sample data:
 |--------|----------|-------------|
 | GET | `/api/student/courses/:courseId/materials` | Get course materials & progress |
 | POST | `/api/student/courses/:courseId/materials/complete` | Mark material as completed |
-| POST | `/api/courses/:courseId/materials` | Add material (Bab) to course |
-| PUT | `/api/courses/:courseId/materials/:materialId` | Update material (Bab) |
-| DELETE | `/api/courses/:courseId/materials/:materialId` | Delete material (Bab) |
-| POST | `/api/courses/:courseId/materials/:materialId/sub-materials` | Add sub-material (Sub-Bab) |
-| PUT | `/api/courses/:courseId/materials/:materialId/sub-materials/:subMaterialId` | Update sub-material |
-| DELETE | `/api/courses/:courseId/materials/:materialId/sub-materials/:subMaterialId` | Delete sub-material |
+| POST | `/api/courses/:courseId/materials` | Add material to course |
+| PUT | `/api/courses/:courseId/materials/:materialId` | Update material |
+| DELETE | `/api/courses/:courseId/materials/:materialId` | Delete material |
+| POST | `/api/courses/:courseId/materials/:materialId/sub-materials` | Add sub-material |
 
 ### Quests (Assessments)
 | Method | Endpoint | Description |
@@ -300,11 +319,15 @@ The platform implements a sophisticated materials-based learning system where st
 - Authentication & profile management
 - Role-based permissions (admin, mentor, student)
 - Enrollment and certification tracking
+- Admin approval system (pending/approved/rejected)
+- Email verification system
+- Refresh token management
 
 ### Course
 - Content and pricing management
 - Approval workflow (pending → approved/rejected)
 - Quest associations and enrollment metrics
+- Admin approved pricing and platform fee
 
 ### Quest
 - Multiple question types with auto-grading
@@ -326,6 +349,14 @@ The platform implements a sophisticated materials-based learning system where st
 - Hierarchical content structure for courses
 - Progress tracking per sub-material
 - Completion requirements for assessments
+
+### Enrollment
+- Tracks course enrollment with progress
+- Links students to courses with payment status
+
+### Progress
+- Granular progress tracking per material
+- Links enrollments to completed materials
 
 ## 🧑‍💻 Development
 
@@ -354,12 +385,18 @@ npm run dev
 
 ## 🔒 Security
 
-- Password hashing with bcryptjs
-- JWT-based authentication
-- Role-based access control
-- Input validation
-- Secure payment processing with Stripe
-- Protection against common web vulnerabilities
+- **Password hashing** with bcryptjs (10 salt rounds)
+- **JWT authentication** with refresh tokens in HTTP-only cookies
+- **Role-based access control** with authorization middleware
+- **Input validation** with express-validator
+- **Rate Limiting** with express-rate-limit (100 requests/15 min per IP)
+- **Security Headers** with Helmet.js
+- **CORS configuration** with proper origin control
+- **File upload validation** with type and size limits
+- **Email verification** system
+- **Admin approval** for all registrations
+- **Secure payment processing** with Stripe
+- **Protection against common web vulnerabilities**
 
 ## 🚀 Production Deployment
 
@@ -367,7 +404,7 @@ npm run dev
 
 1. **Change default credentials**:
    - MongoDB password
-   - JWT secret (use `openssl rand -base64 64`)
+   - JWT secrets (use `openssl rand -base64 64` for strength)
    - Mongo Express credentials
 
 2. **Environment configuration**:
@@ -400,7 +437,7 @@ curl -X POST http://localhost:5001/api/auth/register \
   }'
 ```
 
-### Login
+### Login (After Email verification and Admin Approval)
 ```bash
 curl -X POST http://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
@@ -425,6 +462,21 @@ curl -X POST http://localhost:5001/api/courses \
       "currency": "USD"
     },
     "tags": ["nodejs", "javascript", "backend"]
+  }'
+```
+
+### Admin User Management
+```bash
+# Get all users
+curl -X GET http://localhost:5001/api/admin/users \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+
+# Update user approval status
+curl -X PUT http://localhost:5001/api/admin/users/:userId/approval \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -d '{
+    "approvalStatus": "approved"
   }'
 ```
 
@@ -471,15 +523,6 @@ kill -9 <PID>
 ports:
   - "5002:5000"
 ```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add documentation for new features
-5. Test thoroughly using the Postman collection
-6. Submit a pull request
 
 ## 📄 License
 

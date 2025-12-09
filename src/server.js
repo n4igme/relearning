@@ -1,8 +1,11 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
+const security = require('./middleware/security');
+const { limiter, authLimiter } = require('./middleware/rateLimit');
 
 // Load env vars
 dotenv.config();
@@ -12,8 +15,17 @@ connectDB();
 
 const app = express();
 
+// Apply security middleware first
+app.use(security);
+
+// Apply general rate limiting to all requests
+app.use(limiter);
+
 // CORS
 app.use(cors());
+
+// Cookie parser middleware
+app.use(cookieParser());
 
 // Body parser (except for webhook route)
 app.use((req, res, next) => {
@@ -27,13 +39,16 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', authLimiter, require('./routes/auth')); // More restrictive for auth
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/courses', require('./routes/courses'));
 app.use('/api/quests', require('./routes/quests'));
 app.use('/api/student', require('./routes/student'));
 app.use('/api/forum', require('./routes/forum'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/enrollments', require('./routes/enrollments'));
+app.use('/api/progress', require('./routes/progress'));
+app.use('/api/certificates', require('./routes/certificates'));
 
 // Health check
 app.get('/health', (req, res) => {

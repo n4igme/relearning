@@ -1,48 +1,64 @@
 const express = require('express');
 const {
+  getAllUsers,
+  getUserById,
+  updateUserRole,
+  updateUserApproval,
+  deleteUser,
+  toggleUserActivation,
   getPendingCourses,
+  getPendingQuests,
   approveCourse,
   rejectCourse,
-  getPendingPrices,
-  approveCoursePrice,
-  rejectCoursePrice,
-  getPendingQuests,
   approveQuest,
   rejectQuest,
-  getAllUsers,
-  updateUserRole,
-  deactivateUser,
   getDashboardStats
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Protect all routes and authorize only admin
+// Protect all routes and require admin role
 router.use(protect);
 router.use(authorize('admin'));
 
-// Dashboard
-router.get('/stats', getDashboardStats);
+// User management routes
+router.route('/users')
+  .get(getAllUsers);
 
-// Course management
-router.get('/courses/pending', getPendingCourses);
-router.put('/courses/:id/approve', approveCourse);
-router.put('/courses/:id/reject', rejectCourse);
+router.route('/users/:id')
+  .get(getUserById)
+  .put(updateUserRole)
+  .delete(deleteUser);
 
-// Price management
-router.get('/pricing/pending', getPendingPrices);
-router.put('/courses/:id/approve-price', approveCoursePrice);
-router.put('/courses/:id/reject-price', rejectCoursePrice);
+router.route('/users/:id/approval')
+  .put(updateUserApproval);
 
-// Quest management
-router.get('/quests/pending', getPendingQuests);
-router.put('/quests/:id/approve', approveQuest);
-router.put('/quests/:id/reject', rejectQuest);
+router.route('/users/:id/toggle-activation')
+  .put(toggleUserActivation);
 
-// User management
-router.get('/users', getAllUsers);
-router.put('/users/:id/role', updateUserRole);
-router.put('/users/:id/deactivate', deactivateUser);
+// Course approval routes
+router.route('/courses/pending')
+  .get(getPendingCourses);
+
+router.route('/courses/:id/approval/approve')
+  .put(approveCourse);
+
+router.route('/courses/:id/approval/reject')
+  .put(rejectCourse);
+
+// Quest approval routes
+router.route('/quests/pending')
+  .get(getPendingQuests);
+
+router.route('/quests/:id/approval/approve')
+  .put(approveQuest);
+
+router.route('/quests/:id/approval/reject')
+  .put(rejectQuest);
+
+// Dashboard statistics route
+router.route('/dashboard/stats')
+  .get(getDashboardStats);
 
 module.exports = router;

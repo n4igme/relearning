@@ -25,6 +25,10 @@
     @apply bg-red-600 text-white hover:bg-red-700;
   }
 
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
   .input {
     @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent;
   }
@@ -32,4 +36,26 @@
   .card {
     @apply bg-white rounded-lg shadow-md p-6;
   }
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 }

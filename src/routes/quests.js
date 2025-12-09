@@ -1,23 +1,53 @@
 const express = require('express');
 const {
-  createQuest,
-  getCourseQuests,
+  getCourseQuest,
   getQuest,
+  createQuest,
   updateQuest,
-  deleteQuest,
-  getMyQuests
+  submitQuest,
+  getQuestAttempts,
+  getMentorQuests,
+  getPendingQuests,
+  approveQuest,
+  rejectQuest
 } = require('../controllers/questController');
 const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/', protect, authorize('admin', 'mentor'), createQuest);
-router.get('/mentor/my-quests', protect, authorize('admin', 'mentor'), getMyQuests);
-router.get('/course/:courseId', getCourseQuests);
+// Routes accessible to students when enrolled
+router.use(protect);
+
+router.route('/course/:courseId')
+  .get(getCourseQuest);
 
 router.route('/:id')
-  .get(protect, getQuest)
-  .put(protect, authorize('admin', 'mentor'), updateQuest)
-  .delete(protect, authorize('admin', 'mentor'), deleteQuest);
+  .get(getQuest)
+  .put(updateQuest); // Only mentor/admin can update
+
+router.route('/:id/submit')
+  .post(submitQuest);
+
+router.route('/:id/attempts')
+  .get(getQuestAttempts);
+
+// Routes for mentors
+router.route('/')
+  .post(createQuest);
+
+router.route('/mentor/my-quests')
+  .get(getMentorQuests);
+
+// Admin routes
+router.use(authorize('admin'));
+
+router.route('/pending')
+  .get(getPendingQuests);
+
+router.route('/:id/approve')
+  .put(approveQuest);
+
+router.route('/:id/reject')
+  .put(rejectQuest);
 
 module.exports = router;

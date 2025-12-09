@@ -1,57 +1,36 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { coursesAPI } from '../../utils/api';
-import { toast } from 'react-hot-toast';
+import Loading from '../../components/common/Loading';
+import Alert from '../../components/common/Alert';
+import Input from '../../components/common/Input';
+import Textarea from '../../components/common/Textarea';
+import Select from '../../components/common/Select';
+import Button from '../../components/common/Button';
 
-// Icons
-import { 
-  BookOpenIcon, 
-  ArrowLeftIcon, 
-  PlusIcon
-} from '@heroicons/react/24/outline';
-
-function CreateCourse() {
+export default function CreateCourse() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'programming',
+    category: '',
     difficulty: 'beginner',
-    price: {
-      amount: 0,
-      currency: 'USD'
-    },
-    tags: '',
-    thumbnail: null
+    price: { amount: 0, currency: 'USD' },
+    thumbnail: '',
+    isPublished: false
   });
 
-  const categories = [
-    'programming',
-    'design',
-    'business',
-    'marketing',
-    'data-science',
-    'other'
-  ];
-
-  const difficulties = [
-    'beginner',
-    'intermediate',
-    'advanced'
-  ];
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name.startsWith('price.')) {
-      const priceField = name.split('.')[1];
+  const handleChange = (name, value) => {
+    if (name === 'price.amount') {
       setFormData(prev => ({
         ...prev,
         price: {
           ...prev.price,
-          [priceField]: value
+          amount: value
         }
       }));
     } else {
@@ -62,234 +41,168 @@ function CreateCourse() {
     }
   };
 
-  const handleTagsChange = (e) => {
-    const tagsString = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      tags: tagsString
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
-      // Process tags into an array
-      const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-
       const courseData = {
         ...formData,
-        tags: tagsArray,
-        price: {
-          amount: parseFloat(formData.price.amount),
-          currency: formData.price.currency
-        }
+        price: formData.price
       };
 
-      const response = await coursesAPI.create(courseData);
-      
-      if (response.data.success) {
-        toast.success('Course created successfully!');
-        navigate('/mentor/content');
-      }
-    } catch (error) {
-      console.error('Error creating course:', error);
-      toast.error(error.response?.data?.message || 'Failed to create course');
+      await coursesAPI.create(courseData);
+      setSuccess('Course created successfully!');
+      setTimeout(() => {
+        navigate('/mentor');
+      }, 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create course. Please try again.');
+      console.error('Error creating course:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBack = () => {
-    navigate('/mentor/content');
-  };
-
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="mb-6">
-        <button
-          onClick={handleBack}
-          className="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700"
-        >
-          <ArrowLeftIcon className="h-4 w-4 mr-1" />
-          Back to My Content
-        </button>
-      </div>
-
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Create New Course</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Fill in the details for your new course
-          </p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 gap-6">
-            {/* Course Title */}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Create New Course</h1>
+      
+      {loading && <Loading />}
+      
+      {error && <Alert type="error" message={error} />}
+      {success && <Alert type="success" message={success} />}
+      
+      <div className="max-w-3xl mx-auto">
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6">
+          <div className="space-y-6">
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                Course Title
-              </label>
-              <input
-                type="text"
-                id="title"
+              <Input
+                label="Course Title"
                 name="title"
                 value={formData.title}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                onChange={(e) => handleChange('title', e.target.value)}
                 placeholder="Enter course title"
+                required
               />
             </div>
-
-            {/* Description */}
+            
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                id="description"
+              <Textarea
+                label="Course Description"
                 name="description"
-                rows={4}
                 value={formData.description}
-                onChange={handleInputChange}
+                onChange={(e) => handleChange('description', e.target.value)}
+                placeholder="Enter course description"
                 required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Describe your course"
+                rows={4}
               />
             </div>
-
-            {/* Category */}
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                Category
-              </label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              >
-                {categories.map(category => (
-                  <option key={category} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Difficulty */}
-            <div>
-              <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700">
-                Difficulty Level
-              </label>
-              <select
-                id="difficulty"
-                name="difficulty"
-                value={formData.difficulty}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              >
-                {difficulties.map(difficulty => (
-                  <option key={difficulty} value={difficulty}>
-                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Price */}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="price.amount" className="block text-sm font-medium text-gray-700">
-                  Price ($)
-                </label>
-                <input
-                  type="number"
-                  id="price.amount"
-                  name="price.amount"
-                  step="0.01"
-                  min="0"
-                  value={formData.price.amount}
-                  onChange={handleInputChange}
+                <Select
+                  label="Category"
+                  name="category"
+                  value={formData.category}
+                  onChange={(e) => handleChange('category', e.target.value)}
+                  options={[
+                    { value: 'programming', label: 'Programming' },
+                    { value: 'design', label: 'Design' },
+                    { value: 'business', label: 'Business' },
+                    { value: 'marketing', label: 'Marketing' },
+                    { value: 'data-science', label: 'Data Science' },
+                    { value: 'other', label: 'Other' }
+                  ]}
                   required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="0.00"
                 />
               </div>
               
               <div>
-                <label htmlFor="price.currency" className="block text-sm font-medium text-gray-700">
-                  Currency
-                </label>
-                <select
-                  id="price.currency"
-                  name="price.currency"
-                  value={formData.price.currency}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                >
-                  <option value="USD">USD</option>
-                </select>
+                <Select
+                  label="Difficulty Level"
+                  name="difficulty"
+                  value={formData.difficulty}
+                  onChange={(e) => handleChange('difficulty', e.target.value)}
+                  options={[
+                    { value: 'beginner', label: 'Beginner' },
+                    { value: 'intermediate', label: 'Intermediate' },
+                    { value: 'advanced', label: 'Advanced' }
+                  ]}
+                  required
+                />
               </div>
             </div>
-
-            {/* Tags */}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Price (USD)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 sm:text-sm">$</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={formData.price.amount}
+                    onChange={(e) => handleChange('price.amount', parseFloat(e.target.value) || 0)}
+                    className="input pl-8 w-full"
+                    placeholder="0.00"
+                    min="0"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Publish Course
+                </label>
+                <div className="mt-2">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.isPublished}
+                      onChange={(e) => handleChange('isPublished', e.target.checked)}
+                      className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Make this course publicly available</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
             <div>
-              <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
-                Tags
-              </label>
-              <input
-                type="text"
-                id="tags"
-                name="tags"
-                value={formData.tags}
-                onChange={handleTagsChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Enter tags separated by commas (e.g., javascript, web development, react)"
+              <Input
+                label="Thumbnail URL (Optional)"
+                name="thumbnail"
+                value={formData.thumbnail}
+                onChange={(e) => handleChange('thumbnail', e.target.value)}
+                placeholder="https://example.com/thumbnail.jpg"
               />
-              <p className="mt-1 text-sm text-gray-500">
-                Separate multiple tags with commas
-              </p>
             </div>
-
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={handleBack}
-                className="mr-3 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    Create Course
-                  </>
-                )}
-              </button>
-            </div>
+          </div>
+          
+          <div className="mt-8 flex justify-end space-x-4">
+            <Button 
+              type="button" 
+              variant="secondary"
+              onClick={() => navigate('/mentor')}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="primary"
+              disabled={loading}
+            >
+              {loading ? 'Creating...' : 'Create Course'}
+            </Button>
           </div>
         </form>
       </div>
     </div>
   );
 }
-
-export default CreateCourse;

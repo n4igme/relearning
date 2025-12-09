@@ -22,6 +22,7 @@ import StudentDashboard from './pages/student/Dashboard';
 import MyCourses from './pages/student/MyCourses';
 import MyCertificates from './pages/student/MyCertificates';
 import Checkout from './pages/student/Checkout';
+import CourseMaterials from './pages/student/CourseMaterials';
 
 // Mentor Pages
 import MyContent from './pages/mentor/MyContent';
@@ -36,6 +37,10 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import PendingApprovals from './pages/admin/PendingApprovals';
 import UserManagement from './pages/admin/UserManagement';
 import AllCourses from './pages/admin/AllCourses';
+
+// Forum Pages
+import ForumPage from './pages/forum/ForumPage';
+import ForumThread from './pages/forum/ThreadDetail';
 
 // Placeholder component for not-yet-implemented pages
 function ComingSoon() {
@@ -85,8 +90,8 @@ function App() {
             <Route path="courses" element={<CoursesList />} />
             <Route path="courses/:id" element={<CourseDetails />} />
             <Route path="checkout/:id" element={<Checkout />} />
-            <Route path="forum" element={<ComingSoon />} />
-            <Route path="forum/:id" element={<ComingSoon />} />
+            <Route path="forum" element={<ForumPage />} />
+            <Route path="forum/:id" element={<ForumThread />} />
           </Route>
 
           {/* Student Routes */}
@@ -122,6 +127,16 @@ function App() {
               <ProtectedRoute allowedRoles={['student']}>
                 <MainLayout>
                   <Quest />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/courses/:courseId/materials"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <MainLayout>
+                  <CourseMaterials />
                 </MainLayout>
               </ProtectedRoute>
             }

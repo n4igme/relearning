@@ -1,94 +1,81 @@
 const Payment = require('../models/Payment');
+const Enrollment = require('../models/Enrollment');
 const Course = require('../models/Course');
+const User = require('../models/User');
+const Stripe = require('stripe');
 
-/**
- * Create mock payment intent
- * @param {Object} paymentData - Payment information
- * @returns {Object} Payment intent
- */
-exports.createPaymentIntent = async (paymentData) => {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+exports.createPaymentIntent = async (data) => {
+  const { amount, currency, courseId, studentId } = data;
+
   try {
-    const { amount, currency, courseId, studentId } = paymentData;
-
-    // Mock Stripe payment intent creation
-    const mockPaymentIntent = {
-      id: `pi_mock_${Math.random().toString(36).substr(2, 9)}`,
-      client_secret: `pi_mock_${Math.random().toString(36).substr(2, 9)}`,
+    // Create payment intent with Stripe
+    const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
-      currency: currency.toLowerCase(),
-      status: 'requires_confirmation',
+      currency: currency || 'usd',
       metadata: {
-        courseId,
-        studentId
+        courseId: courseId.toString(),
+        studentId: studentId.toString()
       }
-    };
+    });
 
-    return mockPaymentIntent;
+    return paymentIntent;
   } catch (error) {
-    throw new Error(`Payment intent creation failed: ${error.message}`);
+    throw new Error(`Failed to create payment intent: ${error.message}`);
   }
 };
 
-/**
- * Confirm payment and create payment record
- * @param {String} paymentIntentId - Mock payment intent ID
- * @returns {Object} Payment record
- */
 exports.confirmPayment = async (paymentIntentId) => {
   try {
-    // In a real app, we would retrieve the payment intent from Stripe
-    // For mock purposes, we'll extract the course and student IDs from the DB based on payment intent ID
-    // If no payment record exists, we'll create a new one from the payment intent ID
-    
-    // First, check if a payment record with this intent ID already exists (created during intent creation)
-    let payment = await Payment.findOne({ stripePaymentIntentId: paymentIntentId });
-    
-    if (payment) {
-      // Payment record already exists, just update status
-      payment.status = 'completed';
-      await payment.save();
-    } else {
-      // Create a new payment record since this is the first confirmation
-      // We need to extract the course and student ID from the context
-      // For demo purposes, we'll use mock values but in a real system these would come from the intent metadata
-      const mockPaymentIntent = {
-        id: paymentIntentId,
-        amount: 4999, // Default amount (49.99 * 100)
-        currency: 'usd',
-        status: 'succeeded',
-        metadata: {
-          courseId: '69109b248ce9954272ee4221', // Default course ID for demo
-          studentId: '6910b3db95502b22a4a28713'  // Default student ID for demo
-        }
-      };
+    // Retrieve the payment intent to get details
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-      if (mockPaymentIntent.status === 'succeeded') {
-        payment = await Payment.create({
-          student: mockPaymentIntent.metadata.studentId,
-          course: mockPaymentIntent.metadata.courseId,
-          amount: mockPaymentIntent.amount / 100, // Convert from cents
-          currency: mockPaymentIntent.currency.toUpperCase(),
-          stripePaymentIntentId: mockPaymentIntent.id,
-          status: 'completed',
-          paymentMethod: 'stripe'
-        });
-      } else {
-        throw new Error('Payment not successful');
-      }
+    if (paymentIntent.status !== 'succeeded') {
+      throw new Error('Payment not completed successfully');
     }
 
-    return payment;
+    // Get course and student IDs from metadata
+    const courseId = paymentIntent.metadata.courseId;
+    const studentId = paymentIntent.metadata.studentId;
+
+    // Create payment record
+    const payment = await Payment.create({
+      student: studentId,
+      course: courseId,
+      amount: paymentIntent.amount / 100, // Convert back from cents
+      currency: paymentIntent.currency,
+      paymentMethod: 'stripe',
+      stripePaymentIntentId: paymentIntent.id,
+      status: 'completed',
+      metadata: {
+        paymentIntentId: paymentIntent.id
+      }
+    });
+
+    // Create enrollment
+    const enrollment = await Enrollment.create({
+      student: studentId,
+      course: courseId,
+      paymentStatus: 'completed',
+      paymentAmount: paymentIntent.amount / 100,
+      transactionId: payment.transactionId
+    });
+
+    // Update course enrollment count
+    await Course.findByIdAndUpdate(courseId, {
+      $inc: { enrollmentCount: 1 }
+    });
+
+    return {
+      payment,
+      enrollment
+    };
   } catch (error) {
-    throw new Error(`Payment confirmation failed: ${error.message}`);
+    throw new Error(`Failed to confirm payment: ${error.message}`);
   }
 };
 
-/**
- * Process refund
- * @param {String} paymentId - Payment ID
- * @param {String} reason - Refund reason
- * @returns {Object} Updated payment record
- */
 exports.processRefund = async (paymentId, reason) => {
   try {
     const payment = await Payment.findById(paymentId);
@@ -98,41 +85,34 @@ exports.processRefund = async (paymentId, reason) => {
     }
 
     if (payment.status !== 'completed') {
-      throw new Error('Payment is not eligible for refund');
+      throw new Error('Cannot refund a payment that is not completed');
     }
 
-    // Mock Stripe refund
-    const mockRefund = {
-      amount: payment.amount * 100, // Convert to cents
-      payment_intent: payment.stripePaymentIntentId
-    };
+    // In real implementation, you would call Stripe to process the refund
+    // const refund = await stripe.refunds.create({
+    //   payment_intent: payment.stripePaymentIntentId
+    // });
 
-    // Update payment record
+    // Update payment status
     payment.status = 'refunded';
     payment.refundDetails = {
-      refundedAt: Date.now(),
-      reason: reason || 'requested_by_customer',
-      amount: mockRefund.amount / 100
+      refundedAt: new Date(),
+      reason: reason,
+      amount: payment.amount
     };
-
     await payment.save();
 
     return payment;
   } catch (error) {
-    throw new Error(`Refund processing failed: ${error.message}`);
+    throw new Error(`Failed to process refund: ${error.message}`);
   }
 };
 
-/**
- * Get payment details
- * @param {String} paymentId - Payment ID
- * @returns {Object} Payment details
- */
 exports.getPaymentDetails = async (paymentId) => {
   try {
     const payment = await Payment.findById(paymentId)
       .populate('student', 'name email')
-      .populate('course', 'title');
+      .populate('course', 'title description');
 
     if (!payment) {
       throw new Error('Payment not found');
@@ -144,35 +124,121 @@ exports.getPaymentDetails = async (paymentId) => {
   }
 };
 
-/**
- * Mock webhook handler (does nothing in mock mode)
- * @param {Object} event - Stripe event
- */
 exports.handleWebhook = async (event) => {
   try {
-    // In mock mode, we don't process actual webhooks
-    // In a real application, this would process the event and update the database accordingly
     switch (event.type) {
       case 'payment_intent.succeeded':
-        // In a real app, this would confirm the payment
-        console.log('Mock webhook: payment_intent.succeeded');
+        const paymentIntent = event.data.object;
+        
+        // Update payment status in our database
+        await Payment.findOneAndUpdate(
+          { stripePaymentIntentId: paymentIntent.id },
+          { status: 'completed' }
+        );
+        
+        console.log('Payment succeeded for:', paymentIntent.id);
         break;
 
       case 'payment_intent.payment_failed':
-        // In a real app, this would mark the payment as failed
-        console.log('Mock webhook: payment_intent.payment_failed');
+        const failedPaymentIntent = event.data.object;
+        
+        // Update payment status in our database
+        await Payment.findOneAndUpdate(
+          { stripePaymentIntentId: failedPaymentIntent.id },
+          { status: 'failed' }
+        );
+        
+        console.log('Payment failed for:', failedPaymentIntent.id);
         break;
 
       case 'charge.refunded':
-        // In a real app, this would process the refund
-        console.log('Mock webhook: charge.refunded');
+        const charge = event.data.object;
+        
+        // Update payment status to refunded
+        await Payment.findOneAndUpdate(
+          { stripePaymentIntentId: charge.payment_intent },
+          { 
+            status: 'refunded',
+            refundDetails: {
+              refundedAt: new Date(),
+              reason: charge.refunds.data[0].reason || 'Refund processed',
+              amount: charge.refunds.data[0].amount / 100
+            }
+          }
+        );
+        
+        console.log('Payment refunded:', charge.payment_intent);
         break;
 
       default:
-        console.log(`Mock webhook: unhandled event type: ${event.type}`);
+        console.log(`Unhandled event type ${event.type}`);
     }
   } catch (error) {
-    console.error('Mock webhook handling error:', error);
+    console.error('Webhook handler error:', error);
+    throw error;
+  }
+};
+
+// Midtrans Mock Implementation
+exports.createMidtransPayment = async (data) => {
+  const { amount, courseId, studentId } = data;
+
+  try {
+    // In a real implementation, you would call the Midtrans API
+    // For this demo, we'll create a mock transaction
+    const mockTransactionId = `MIDTRANS-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    
+    return {
+      transaction_id: mockTransactionId,
+      gross_amount: amount,
+      payment_url: 'https://example.com/mock-payment-page', // This would be the real redirect URL
+      token: 'mock_token_for_demo'
+    };
+  } catch (error) {
+    throw new Error(`Failed to create Midtrans payment: ${error.message}`);
+  }
+};
+
+// Process Midtrans webhook
+exports.handleMidtransWebhook = async (notification) => {
+  try {
+    const { order_id, transaction_status, fraud_status } = notification;
+
+    // Find payment by transaction ID (order_id)
+    const payment = await Payment.findOne({ transactionId: order_id });
+
+    if (!payment) {
+      console.log('Payment not found for order_id:', order_id);
+      return;
+    }
+
+    // Update payment status based on transaction_status
+    switch (transaction_status) {
+      case 'capture':
+      case 'settlement':
+        if (fraud_status === 'accept') {
+          payment.status = 'completed';
+        } else {
+          payment.status = 'failed';
+        }
+        break;
+      case 'pending':
+        payment.status = 'pending';
+        break;
+      case 'cancel':
+      case 'deny':
+      case 'expire':
+        payment.status = 'failed';
+        break;
+      default:
+        console.log(`Unknown transaction status: ${transaction_status}`);
+        return;
+    }
+
+    await payment.save();
+    console.log(`Payment ${order_id} updated to status: ${payment.status}`);
+  } catch (error) {
+    console.error('Midtrans webhook handler error:', error);
     throw error;
   }
 };

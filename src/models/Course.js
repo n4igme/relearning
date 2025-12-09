@@ -109,6 +109,26 @@ const courseSchema = new mongoose.Schema({
       ref: 'User'
     }
   },
+  adminApprovedPrice: {
+    amount: {
+      type: Number
+    },
+    currency: {
+      type: String,
+      default: 'USD'
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    approvedAt: {
+      type: Date
+    }
+  },
+  platformFee: {
+    type: Number,
+    default: 0 // Will be set by admin
+  },
   priceApprovalStatus: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],

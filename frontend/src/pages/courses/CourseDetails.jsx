@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { coursesAPI } from '../../utils/api';
-import Card from '../../components/common/Card';
+import { coursesAPI, studentAPI } from '../../utils/api';
 import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
-import Badge from '../../components/common/Badge';
+import LessonCard from '../../components/common/LessonCard';
+import QuestCard from '../../components/common/QuestCard';
+import { StarIcon, UserIcon, ClockIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
 export default function CourseDetails() {
   const { id } = useParams();
@@ -12,6 +13,8 @@ export default function CourseDetails() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [userEnrollment, setUserEnrollment] = useState(null);
 
   useEffect(() => {
     fetchCourse();
@@ -22,226 +25,235 @@ export default function CourseDetails() {
       setLoading(true);
       const response = await coursesAPI.getOne(id);
       setCourse(response.data.data);
+      setError('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load course');
+      setError('Failed to load course. Please try again later.');
+      console.error('Error fetching course:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEnroll = () => {
-    // Navigate to the checkout page to complete enrollment
-    navigate(`/checkout/${id}`);
+  const handleEnroll = async () => {
+    try {
+      await studentAPI.enroll(id);
+      // Refresh course data after enrollment
+      fetchCourse();
+      // Navigate to course materials or show success message
+      navigate(`/courses/${id}/materials`);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to enroll in course. Please try again.');
+      console.error('Error enrolling in course:', err);
+    }
   };
 
-  if (loading) {
-    return <Loading text="Loading course details..." />;
-  }
+  if (loading) return <Loading />;
+  
+  if (error) return <Alert type="error" message={error} />;
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          <Alert type="error" message={error} />
-          <div className="mt-4 text-center">
-            <Link to="/courses" className="btn btn-primary">
-              Browse All Courses
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!course) return <div>Course not found</div>;
 
-  if (!course) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Course not found</h3>
-              <p className="text-gray-600">
-                The course you're looking for doesn't exist or may have been removed
-              </p>
-              <div className="mt-4">
-                <Link to="/courses" className="btn btn-primary">
-                  Browse All Courses
-                </Link>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const { 
+    title, 
+    description, 
+    creator, 
+    materials = [],
+    quests = [],
+    price,
+    difficulty,
+    rating,
+    enrollmentCount,
+    isPublished,
+    approvalStatus
+  } = course;
+
+  // Check if user is enrolled
+  const isEnrolled = course.enrolledCourses && course.enrolledCourses.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <nav className="mb-6 text-sm text-gray-600">
-          <Link to="/" className="hover:underline">Home</Link>
-          <span className="mx-2">/</span>
-          <Link to="/courses" className="hover:underline">Courses</Link>
-          <span className="mx-2">/</span>
-          <span className="text-gray-900">{course.title}</span>
-        </nav>
-
-        {/* Course Header */}
-        <Card className="mb-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Image Section (placeholder) */}
-            <div className="md:w-2/5">
-              <div className="bg-gray-200 border-2 border-dashed rounded-xl w-full h-64 flex items-center justify-center">
-                <span className="text-gray-500">Course Thumbnail</span>
-              </div>
-            </div>
-
-            {/* Course Info Section */}
-            <div className="md:w-3/5 space-y-4">
-              <div>
-                <div className="flex items-start justify-between">
-                  <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
-                  <div className="text-right">
-                    {course.price?.amount > 0 ? (
-                      <div className="text-2xl font-bold text-gray-900">
-                        ${course.price.amount.toFixed(2)}
-                      </div>
-                    ) : (
-                      <Badge variant="success" size="lg">Free</Badge>
-                    )}
-                  </div>
-                </div>
-                <p className="text-gray-600 mt-2">{course.description}</p>
-              </div>
-
-              {/* Course Meta */}
-              <div className="flex flex-wrap gap-4 pt-2">
+    <div className="container mx-auto px-4 py-8">
+      {/* Course Header */}
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+        <div className="p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
+              <p className="text-gray-600 mb-4">{description}</p>
+              
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                 <div className="flex items-center">
-                  <span className="mr-2 text-gray-600">Category:</span>
-                  <Badge variant="primary">{course.category}</Badge>
+                  <UserIcon className="h-4 w-4 mr-1" />
+                  <span>Instructor: {creator?.name || 'Unknown'}</span>
                 </div>
+                
                 <div className="flex items-center">
-                  <span className="mr-2 text-gray-600">Level:</span>
-                  <Badge variant="default">{course.difficulty}</Badge>
-                </div>
-                <div className="flex items-center">
-                  <span className="mr-2 text-gray-600">Students:</span>
-                  <span className="font-medium">{course.enrollmentCount || 0}</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="mr-2 text-gray-600">Rating:</span>
-                  <span className="font-medium">
-                    {course.rating?.average > 0 ? course.rating.average.toFixed(1) : 'New'}
-                    <span className="ml-1">⭐</span>
+                  <StarIcon className="h-4 w-4 text-yellow-400 mr-1" />
+                  <span>
+                    {rating?.average?.toFixed(1) || '0.0'} ({rating?.count || 0} reviews)
                   </span>
                 </div>
-              </div>
-
-              {/* Tags */}
-              {course.tags && course.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {course.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary">{tag}</Badge>
-                  ))}
+                
+                <div className="flex items-center">
+                  <UserIcon className="h-4 w-4 mr-1" />
+                  <span>{enrollmentCount || 0} students</span>
                 </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
+                  difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {difficulty}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 md:mt-0 text-right">
+              <div className="text-3xl font-bold text-gray-900 mb-2">
+                {price?.amount > 0 ? `$${price.amount}` : 'Free'}
+              </div>
+              {isEnrolled ? (
+                <Link
+                  to={`/courses/${id}/materials`}
+                  className="btn btn-primary"
+                >
+                  Continue Learning
+                </Link>
+              ) : (
                 <button
                   onClick={handleEnroll}
-                  disabled={!course.isPublished}
-                  className={`btn ${
-                    course.isPublished ? 'btn-primary' : 'btn-secondary'
-                  } ${!course.isPublished ? 'cursor-not-allowed' : ''}`}
+                  disabled={!isPublished || approvalStatus !== 'approved'}
+                  className="btn btn-primary w-full md:w-auto"
                 >
-                  {course.isPublished ? 'Enroll Now' : 'Coming Soon'}
+                  {!isPublished || approvalStatus !== 'approved' 
+                    ? 'Course Not Available' 
+                    : 'Enroll Now'}
                 </button>
-                <Link to="/courses" className="btn btn-outline">
-                  Back to Courses
-                </Link>
-              </div>
-
-              {/* Creator Info */}
-              <div className="flex items-center pt-4 border-t border-gray-200">
-                <div className="mr-3">
-                  <div className="bg-gray-200 border-2 border-dashed rounded-full w-12 h-12" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    Created by {course.creator?.name || 'Unknown'}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    {course.creator?.role?.charAt(0).toUpperCase() + course.creator?.role?.slice(1) || 'Instructor'}
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
-        </Card>
+        </div>
+      </div>
 
-        {/* Course Content */}
-        {course.content && course.content.length > 0 && (
-          <Card className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Course Content</h2>
-            <div className="space-y-3">
-              {course.content.map((item, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-                >
-                  <div className="mr-3 text-gray-500">
-                    {item.type === 'video' && '🎬'}
-                    {item.type === 'article' && '📄'}
-                    {item.type === 'quiz' && '❓'}
-                    {item.type === 'resource' && '🔗'}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">{item.title}</div>
-                    <div className="text-sm text-gray-600">
-                      {item.type.charAt(0).toUpperCase() + item.type.slice(1)} • 
-                      {item.duration ? ` ${item.duration} min` : ' Duration unknown'}
+      {/* Course Tabs */}
+      <div className="bg-white rounded-lg shadow mb-8">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8 px-6">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'overview'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('curriculum')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'curriculum'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Curriculum
+            </button>
+            <button
+              onClick={() => setActiveTab('quests')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'quests'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Quests
+            </button>
+          </nav>
+        </div>
+
+        <div className="p-6">
+          {activeTab === 'overview' && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Course Description</h3>
+              <div className="prose max-w-none text-gray-600">
+                <p>{description}</p>
+              </div>
+              
+              <div className="mt-6">
+                <h4 className="text-md font-medium text-gray-900 mb-3">What you'll learn</h4>
+                <ul className="list-disc pl-5 space-y-2 text-gray-600">
+                  <li>Master the fundamentals of the subject</li>
+                  <li>Build practical, real-world projects</li>
+                  <li>Apply knowledge through hands-on exercises</li>
+                  <li>Prepare for advanced topics in the field</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'curriculum' && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Course Content</h3>
+              
+              {materials && materials.length > 0 ? (
+                <div className="space-y-4">
+                  {materials.map((material, index) => (
+                    <div key={material._id} className="border-l-4 border-primary-500 pl-4 py-2">
+                      <h4 className="font-medium text-gray-900">{material.title}</h4>
+                      {material.description && (
+                        <p className="text-sm text-gray-600 mb-3">{material.description}</p>
+                      )}
+                      
+                      <div className="ml-4 space-y-2">
+                        {material.subMaterials && material.subMaterials
+                          .sort((a, b) => a.order - b.order)
+                          .map((subMaterial) => (
+                            <LessonCard
+                              key={subMaterial._id}
+                              lesson={{
+                                ...subMaterial,
+                                type: subMaterial.type,
+                                duration: subMaterial.duration,
+                                title: subMaterial.title,
+                                content: subMaterial.content,
+                                url: subMaterial.url
+                              }}
+                              courseId={id}
+                              isCompleted={false} // This would come from user progress
+                            />
+                          ))}
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <p className="text-gray-600">No course content available yet.</p>
+              )}
             </div>
-          </Card>
-        )}
+          )}
 
-        {/* Course Details */}
-        <Card>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">About This Course</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {activeTab === 'quests' && (
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">What you'll learn</h3>
-              <ul className="list-disc list-inside text-gray-700 space-y-1">
-                <li>Learn fundamental concepts of {course.category || 'this subject'}</li>
-                <li>Build practical skills through hands-on projects</li>
-                <li>Prepare for real-world challenges</li>
-                <li>Get feedback from experienced mentors</li>
-              </ul>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Course Quests</h3>
+              
+              {quests && quests.length > 0 ? (
+                <div className="space-y-4">
+                  {quests.map(quest => (
+                    <QuestCard
+                      key={quest._id}
+                      quest={quest}
+                      courseId={id}
+                      userSubmission={null} // This would come from user submissions
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No quests assigned to this course yet.</p>
+              )}
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Requirements</h3>
-              <ul className="list-disc list-inside text-gray-700 space-y-1">
-                <li>Basic understanding of programming concepts</li>
-                <li>A computer with internet access</li>
-                <li>Willingness to learn and practice</li>
-                <li>No prior experience with {course.title.toLowerCase()} required</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="mt-6">
-            <h3 className="font-semibold text-gray-900 mb-2">Course Description</h3>
-            <p className="text-gray-700">
-              {course.description || 'This course covers comprehensive material to help you master the subject. You will learn through a combination of video lectures, practical exercises, and assessments.'}
-            </p>
-          </div>
-        </Card>
+          )}
+        </div>
       </div>
     </div>
   );

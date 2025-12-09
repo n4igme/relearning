@@ -1,289 +1,22 @@
 const Course = require('../models/Course');
+const User = require('../models/User');
+const Material = require('../models/Material');
 const Quest = require('../models/Quest');
-
-// @desc    Create new course
-// @route   POST /api/courses
-// @access  Private/Mentor/Admin
-exports.createCourse = async (req, res) => {
-  try {
-    const {
-      title,
-      description,
-      category,
-      difficulty,
-      thumbnail,
-      content,
-      price,
-      tags
-    } = req.body;
-
-    // Validate required fields
-    if (!title || !description || !category || !price) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide all required fields'
-      });
-    }
-
-    const courseData = {
-      title,
-      description,
-      category,
-      difficulty,
-      thumbnail,
-      content,
-      price: {
-        amount: price.amount,
-        currency: price.currency || 'USD',
-        proposedBy: req.user.id
-      },
-      tags,
-      creator: req.user.id,
-      mentors: [req.user.id]
-    };
-
-    // Admin courses are auto-approved
-    if (req.user.role === 'admin') {
-      courseData.approvalStatus = 'approved';
-      courseData.priceApprovalStatus = 'approved';
-      courseData.approvedBy = req.user.id;
-      courseData.approvedAt = Date.now();
-      courseData.isPublished = true;
-    } else {
-      // Mentor courses need approval
-      courseData.approvalStatus = 'pending';
-      courseData.priceApprovalStatus = 'pending';
-    }
-
-    const course = await Course.create(courseData);
-
-    // Add to user's created courses
-    req.user.createdCourses.push(course._id);
-    await req.user.save();
-
-    res.status(201).json({
-      success: true,
-      message: req.user.role === 'admin'
-        ? 'Course created and published successfully'
-        : 'Course created and submitted for approval',
-      data: course
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
+const Enrollment = require('../models/Enrollment');
 
 // @desc    Get all courses
 // @route   GET /api/courses
 // @access  Public
-exports.getAllCourses = async (req, res) => {
+exports.getCourses = async (req, res, next) => {
   try {
-    const {
-      category,
-      difficulty,
-      search,
-      sortBy = '-createdAt',
-      page = 1,
-      limit = 10
-    } = req.query;
-
-    const query = { approvalStatus: 'approved', isPublished: true };
-
-    if (category) query.category = category;
-    if (difficulty) query.difficulty = difficulty;
-    if (search) {
-      query.$text = { $search: search };
-    }
-
-    const courses = await Course.find(query)
-      .populate('creator', 'name avatar')
-      .select('-content') // Don't send full content in list
-      .sort(sortBy)
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .exec();
-
-    const count = await Course.countDocuments(query);
-
-    res.status(200).json({
-      success: true,
-      count,
-      totalPages: Math.ceil(count / limit),
-      currentPage: page,
-      data: courses
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Get single course
-// @route   GET /api/courses/:id
-// @access  Public
-exports.getCourse = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.id)
-      .populate('creator', 'name email avatar bio')
-      .populate('mentors', 'name avatar')
-      .populate('quests');
-
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    // Only allow viewing approved courses or creator's own courses
-    if (course.approvalStatus !== 'approved' &&
-        (!req.user || (req.user.id !== course.creator._id.toString() && req.user.role !== 'admin'))) {
-      return res.status(403).json({
-        success: false,
-        message: 'This course is not yet published'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: course
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Update course
-// @route   PUT /api/courses/:id
-// @access  Private/Creator/Admin
-exports.updateCourse = async (req, res) => {
-  try {
-    let course = await Course.findById(req.params.id);
-
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    // Check ownership
-    if (course.creator.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this course'
-      });
-    }
-
-    const {
-      title,
-      description,
-      category,
-      difficulty,
-      thumbnail,
-      content,
-      price,
-      tags
-    } = req.body;
-
-    // Update fields
-    if (title) course.title = title;
-    if (description) course.description = description;
-    if (category) course.category = category;
-    if (difficulty) course.difficulty = difficulty;
-    if (thumbnail) course.thumbnail = thumbnail;
-    if (content) course.content = content;
-    if (tags) course.tags = tags;
-
-    // If price is updated, require re-approval for mentors
-    if (price && price.amount !== course.price.amount) {
-      course.price.amount = price.amount;
-      course.price.currency = price.currency || course.price.currency;
-      course.price.proposedBy = req.user.id;
-
-      if (req.user.role !== 'admin') {
-        course.priceApprovalStatus = 'pending';
-      }
-    }
-
-    // If major content changes, require re-approval for mentors
-    if ((title || description || content) && req.user.role !== 'admin' && course.approvalStatus === 'approved') {
-      course.approvalStatus = 'pending';
-      course.isPublished = false;
-    }
-
-    await course.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Course updated successfully',
-      data: course
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Delete course
-// @route   DELETE /api/courses/:id
-// @access  Private/Creator/Admin
-exports.deleteCourse = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.id);
-
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    // Check ownership
-    if (course.creator.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to delete this course'
-      });
-    }
-
-    await course.deleteOne();
-
-    res.status(200).json({
-      success: true,
-      message: 'Course deleted successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Get mentor's courses
-// @route   GET /api/courses/mentor/my-courses
-// @access  Private/Mentor
-exports.getMyCourses = async (req, res) => {
-  try {
-    const courses = await Course.find({ creator: req.user.id })
-      .populate('quests')
-      .sort('-createdAt');
+    // Only return approved and published courses
+    const courses = await Course.find({ 
+      approvalStatus: 'approved', 
+      isPublished: true 
+    })
+    .populate('creator', 'name email')
+    .populate('mentors', 'name email')
+    .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -299,10 +32,135 @@ exports.getMyCourses = async (req, res) => {
   }
 };
 
-// @desc    Add material (bab) to course
-// @route   POST /api/courses/:id/materials
-// @access  Private/Creator/Admin
-exports.addMaterial = async (req, res) => {
+// @desc    Get single course
+// @route   GET /api/courses/:id
+// @access  Public
+exports.getCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id)
+      .populate('creator', 'name email')
+      .populate('mentors', 'name email')
+      .populate('materials')
+      .populate('quests');
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if the course is approved and published (for public access)
+    if (course.approvalStatus !== 'approved' || !course.isPublished) {
+      // Only allow access if user is creator, mentor, or admin
+      if (req.user) {
+        if (req.user.role !== 'admin' && 
+            course.creator.toString() !== req.user.id &&
+            !course.mentors.some(mentor => mentor.toString() === req.user.id)) {
+          return res.status(404).json({
+            success: false,
+            message: 'Course not found'
+          });
+        }
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: 'Course not found'
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Create course
+// @route   POST /api/courses
+// @access  Private/Mentor,Admin
+exports.createCourse = async (req, res, next) => {
+  try {
+    // Add the creator ID to the request body
+    req.body.creator = req.user.id;
+    
+    // Set approval status to pending by default
+    req.body.approvalStatus = 'pending';
+    
+    const course = await Course.create(req.body);
+
+    res.status(201).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Update course
+// @route   PUT /api/courses/:id
+// @access  Private/Mentor,Admin
+exports.updateCourse = async (req, res, next) => {
+  try {
+    let course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is the creator, a mentor for this course, or admin
+    if (req.user.role !== 'admin' && 
+        course.creator.toString() !== req.user.id &&
+        !course.mentors.some(mentor => mentor.toString() === req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this course'
+      });
+    }
+
+    // Don't allow changing approval status through regular update
+    if (req.body.approvalStatus) {
+      delete req.body.approvalStatus;
+    }
+
+    course = await Course.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Delete course
+// @route   DELETE /api/courses/:id
+// @access  Private/Mentor,Admin
+exports.deleteCourse = async (req, res, next) => {
   try {
     const course = await Course.findById(req.params.id);
 
@@ -313,93 +171,189 @@ exports.addMaterial = async (req, res) => {
       });
     }
 
-    // Check ownership
-    if (course.creator.toString() !== req.user.id && req.user.role !== 'admin') {
+    // Check if user is the creator, a mentor for this course, or admin
+    if (req.user.role !== 'admin' && 
+        course.creator.toString() !== req.user.id &&
+        !course.mentors.some(mentor => mentor.toString() === req.user.id)) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to update this course'
+        message: 'Not authorized to delete this course'
       });
     }
 
-    const { title, description, order } = req.body;
+    await course.remove();
 
-    if (!title || order === undefined) {
-      return res.status(400).json({
+    res.status(200).json({
+      success: true,
+      message: 'Course deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get courses by mentor
+// @route   GET /api/courses/mentor/my-courses
+// @access  Private/Mentor,Admin
+exports.getMentorCourses = async (req, res, next) => {
+  try {
+    const courses = await Course.find({
+      $or: [
+        { creator: req.user.id },
+        { mentors: { $in: [req.user.id] } }
+      ]
+    })
+    .populate('creator', 'name email')
+    .populate('mentors', 'name email')
+    .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: courses.length,
+      data: courses
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get pending courses
+// @route   GET /api/admin/courses/pending
+// @access  Private/Admin
+exports.getPendingCourses = async (req, res, next) => {
+  try {
+    const courses = await Course.find({ approvalStatus: 'pending' })
+      .populate('creator', 'name email role')
+      .populate('mentors', 'name email role')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: courses.length,
+      data: courses
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Approve course
+// @route   PUT /api/admin/courses/:id/approve
+// @access  Private/Admin
+exports.approveCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
         success: false,
-        message: 'Title and order are required'
+        message: 'Course not found'
       });
     }
 
-    const material = {
-      title,
-      description,
-      order,
-      subMaterials: []
+    // Update approval status
+    course.approvalStatus = 'approved';
+    course.approvedBy = req.user.id;
+    course.approvedAt = Date.now();
+    course.isPublished = true; // Automatically publish when approved
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Reject course
+// @route   PUT /api/admin/courses/:id/reject
+// @access  Private/Admin
+exports.rejectCourse = async (req, res, next) => {
+  try {
+    const { rejectionReason } = req.body;
+
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Update approval status
+    course.approvalStatus = 'rejected';
+    course.rejectionReason = rejectionReason;
+    course.approvedBy = req.user.id;
+    course.approvedAt = Date.now();
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Update admin approved price
+// @route   PUT /api/admin/courses/:id/approve-price
+// @access  Private/Admin
+exports.updateAdminApprovedPrice = async (req, res, next) => {
+  try {
+    const { amount, platformFee } = req.body;
+
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Update admin approved price
+    course.adminApprovedPrice = {
+      amount: amount,
+      currency: course.adminApprovedPrice?.currency || 'USD',
+      approvedBy: req.user.id,
+      approvedAt: Date.now()
     };
 
-    course.materials.push(material);
-    await course.save();
-
-    // Get the newly added material
-    const addedMaterial = course.materials[course.materials.length - 1];
-
-    res.status(201).json({
-      success: true,
-      message: 'Material added successfully',
-      data: addedMaterial
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Update material (bab)
-// @route   PUT /api/courses/:courseId/materials/:materialId
-// @access  Private/Creator/Admin
-exports.updateMaterial = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.courseId);
-
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
+    if (platformFee !== undefined) {
+      course.platformFee = platformFee;
     }
-
-    // Check ownership
-    if (course.creator.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this course'
-      });
-    }
-
-    const material = course.materials.find(m => m._id.toString() === req.params.materialId);
-
-    if (!material) {
-      return res.status(404).json({
-        success: false,
-        message: 'Material not found'
-      });
-    }
-
-    const { title, description, order } = req.body;
-
-    if (title) material.title = title;
-    if (description) material.description = description;
-    if (order !== undefined) material.order = order;
 
     await course.save();
 
     res.status(200).json({
       success: true,
-      message: 'Material updated successfully',
-      data: material
+      data: course
     });
   } catch (error) {
     res.status(500).json({
@@ -410,238 +364,76 @@ exports.updateMaterial = async (req, res) => {
   }
 };
 
-// @desc    Delete material (bab)
-// @route   DELETE /api/courses/:courseId/materials/:materialId
-// @access  Private/Creator/Admin
-exports.deleteMaterial = async (req, res) => {
+// @desc    Search courses
+// @route   GET /api/courses/search
+// @access  Public
+exports.searchCourses = async (req, res, next) => {
   try {
-    const course = await Course.findById(req.params.courseId);
+    const { 
+      keyword, 
+      category, 
+      minPrice, 
+      maxPrice, 
+      mentor, 
+      difficulty,
+      limit = 10,
+      page = 1
+    } = req.query;
 
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    // Check ownership
-    if (course.creator.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this course'
-      });
-    }
-
-    course.materials = course.materials.filter(
-      m => m._id.toString() !== req.params.materialId
-    );
-
-    await course.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Material deleted successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Add sub-material (sub-bab) to material
-// @route   POST /api/courses/:courseId/materials/:materialId/sub-materials
-// @access  Private/Creator/Admin
-exports.addSubMaterial = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.courseId);
-
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    // Check ownership
-    if (course.creator.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this course'
-      });
-    }
-
-    const material = course.materials.find(m => m._id.toString() === req.params.materialId);
-
-    if (!material) {
-      return res.status(404).json({
-        success: false,
-        message: 'Material not found'
-      });
-    }
-
-    const { title, type, content, url, duration, order } = req.body;
-
-    if (!title || !type || order === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: 'Title, type, and order are required'
-      });
-    }
-
-    if (!['video', 'article', 'resource'].includes(type)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Type must be one of: video, article, resource'
-      });
-    }
-
-    const subMaterial = {
-      title,
-      type,
-      content,
-      url,
-      duration,
-      order
+    // Build query object
+    const query = { 
+      approvalStatus: 'approved', 
+      isPublished: true 
     };
 
-    material.subMaterials.push(subMaterial);
-    await course.save();
-
-    // Get the newly added sub-material
-    const addedSubMaterial = material.subMaterials[material.subMaterials.length - 1];
-
-    res.status(201).json({
-      success: true,
-      message: 'Sub-material added successfully',
-      data: addedSubMaterial
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Update sub-material (sub-bab)
-// @route   PUT /api/courses/:courseId/materials/:materialId/sub-materials/:subMaterialId
-// @access  Private/Creator/Admin
-exports.updateSubMaterial = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.courseId);
-
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
+    // Add keyword search
+    if (keyword) {
+      query.$text = { $search: keyword };
     }
 
-    // Check ownership
-    if (course.creator.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this course'
-      });
+    // Add category filter
+    if (category) {
+      query.category = category;
     }
 
-    const material = course.materials.find(m => m._id.toString() === req.params.materialId);
-
-    if (!material) {
-      return res.status(404).json({
-        success: false,
-        message: 'Material not found'
-      });
+    // Add price range filter
+    if (minPrice || maxPrice) {
+      query['price.amount'] = {};
+      if (minPrice) query['price.amount'].$gte = parseFloat(minPrice);
+      if (maxPrice) query['price.amount'].$lte = parseFloat(maxPrice);
     }
 
-    const subMaterial = material.subMaterials.find(
-      sm => sm._id.toString() === req.params.subMaterialId
-    );
-
-    if (!subMaterial) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sub-material not found'
-      });
+    // Add mentor filter
+    if (mentor) {
+      query.mentors = { $in: [mentor] };
     }
 
-    const { title, type, content, url, duration, order } = req.body;
-
-    if (title) subMaterial.title = title;
-    if (type) {
-      if (!['video', 'article', 'resource'].includes(type)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Type must be one of: video, article, resource'
-        });
-      }
-      subMaterial.type = type;
+    // Add difficulty filter
+    if (difficulty) {
+      query.difficulty = difficulty;
     }
-    if (content) subMaterial.content = content;
-    if (url) subMaterial.url = url;
-    if (duration) subMaterial.duration = duration;
-    if (order !== undefined) subMaterial.order = order;
 
-    await course.save();
+    const limitNum = parseInt(limit, 10);
+    const skip = (parseInt(page, 10) - 1) * limitNum;
+
+    // Get courses with pagination
+    const courses = await Course.find(query)
+      .populate('creator', 'name email')
+      .populate('mentors', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    // Get total count for pagination
+    const total = await Course.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      message: 'Sub-material updated successfully',
-      data: subMaterial
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Delete sub-material (sub-bab)
-// @route   DELETE /api/courses/:courseId/materials/:materialId/sub-materials/:subMaterialId
-// @access  Private/Creator/Admin
-exports.deleteSubMaterial = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.courseId);
-
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    // Check ownership
-    if (course.creator.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this course'
-      });
-    }
-
-    const material = course.materials.find(m => m._id.toString() === req.params.materialId);
-
-    if (!material) {
-      return res.status(404).json({
-        success: false,
-        message: 'Material not found'
-      });
-    }
-
-    material.subMaterials = material.subMaterials.filter(
-      sm => sm._id.toString() !== req.params.subMaterialId
-    );
-
-    await course.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Sub-material deleted successfully'
+      count: courses.length,
+      total,
+      page: parseInt(page, 10),
+      pages: Math.ceil(total / limitNum),
+      data: courses
     });
   } catch (error) {
     res.status(500).json({
