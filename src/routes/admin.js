@@ -6,6 +6,8 @@ const {
   updateUserApproval,
   deleteUser,
   toggleUserActivation,
+  deactivateUser,
+  activateUser,
   getPendingCourses,
   getPendingQuests,
   approveCourse,
@@ -36,6 +38,12 @@ router.route('/users/:id/approval')
 
 router.route('/users/:id/toggle-activation')
   .put(toggleUserActivation);
+
+router.route('/users/:id/deactivate')
+  .put(deactivateUser);
+
+router.route('/users/:id/activate')
+  .put(activateUser);
 
 // Course approval routes
 router.route('/courses/pending')

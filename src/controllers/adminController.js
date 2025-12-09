@@ -190,6 +190,68 @@ exports.toggleUserActivation = async (req, res, next) => {
   }
 };
 
+// @desc    Toggle user activation status (deactivate if active, activate if inactive)
+// @route   PUT /api/admin/users/:id/deactivate
+// @access  Private/Admin
+exports.deactivateUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Toggle the activation status instead of always deactivating
+    user.isActive = !user.isActive;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Activate user (compatibility for old frontend calls)
+// @route   PUT /api/admin/users/:id/activate
+// @access  Private/Admin
+exports.activateUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Activate user
+    user.isActive = true;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Get pending courses
 // @route   GET /api/admin/courses/pending
 // @access  Private/Admin

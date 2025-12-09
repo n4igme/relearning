@@ -134,6 +134,7 @@ export const adminAPI = {
   getAllUsers: () => api.get('/admin/users'),
   updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
   deactivateUser: (id) => api.put(`/admin/users/${id}/deactivate`),
+  activateUser: (id) => api.put(`/admin/users/${id}/activate`),
 };
 
 // Forum API
