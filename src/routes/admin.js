@@ -14,7 +14,10 @@ const {
   rejectCourse,
   approveQuest,
   rejectQuest,
-  getDashboardStats
+  getDashboardStats,
+  publishCourse,
+  unpublishCourse,
+  getAllCourses
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -55,6 +58,32 @@ router.route('/courses/:id/approval/approve')
 router.route('/courses/:id/approval/reject')
   .put(rejectCourse);
 
+// Course management routes
+router.route('/courses')
+  .get(async (req, res, next) => {
+    // Only accessible by admin users (protected by middleware above)
+    try {
+      const Course = require('../models/Course');
+
+      const courses = await Course.find({})
+        .populate('creator', 'name email')
+        .populate('mentors', 'name email')
+        .sort({ createdAt: -1 });
+
+      res.status(200).json({
+        success: true,
+        count: courses.length,
+        data: courses
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  });
+
 // Quest approval routes
 router.route('/quests/pending')
   .get(getPendingQuests);
@@ -68,5 +97,12 @@ router.route('/quests/:id/approval/reject')
 // Dashboard statistics route
 router.route('/dashboard/stats')
   .get(getDashboardStats);
+
+// Course publish/unpublish routes
+router.route('/courses/:id/publish')
+  .put(publishCourse);
+
+router.route('/courses/:id/unpublish')
+  .put(unpublishCourse);
 
 module.exports = router;

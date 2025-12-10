@@ -10,7 +10,9 @@ const {
   approveCourse,
   rejectCourse,
   updateAdminApprovedPrice,
-  searchCourses
+  searchCourses,
+  publishCourse,
+  unpublishCourse
 } = require('../controllers/courseController');
 const materialRoutes = require('./materials');
 const { protect, authorize } = require('../middleware/auth');
@@ -24,11 +26,11 @@ router.route('/')
 router.route('/search')
   .get(searchCourses);
 
+// Private routes for mentors and admins (including getting specific courses)
+router.use(protect);
+
 router.route('/:id')
   .get(getCourse);
-
-// Private routes for mentors and admins
-router.use(protect);
 
 router.route('/')
   .post(createCourse);
@@ -57,5 +59,11 @@ router.route('/:id/reject')
 
 router.route('/:id/approve-price')
   .put(updateAdminApprovedPrice);
+
+router.route('/:id/publish')
+  .put(publishCourse);
+
+router.route('/:id/unpublish')
+  .put(unpublishCourse);
 
 module.exports = router;

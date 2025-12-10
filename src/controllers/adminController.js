@@ -23,6 +23,84 @@ exports.getAllUsers = async (req, res, next) => {
   }
 };
 
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Get user by ID
 // @route   GET /api/admin/users/:id
 // @access  Private/Admin
@@ -40,6 +118,84 @@ exports.getUserById = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
     });
   } catch (error) {
     res.status(500).json({
@@ -90,6 +246,84 @@ exports.updateUserRole = async (req, res, next) => {
   }
 };
 
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Update user approval status
 // @route   PUT /api/admin/users/:id/approval
 // @access  Private/Admin
@@ -130,6 +364,84 @@ exports.updateUserApproval = async (req, res, next) => {
   }
 };
 
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Delete user
 // @route   DELETE /api/admin/users/:id
 // @access  Private/Admin
@@ -149,6 +461,84 @@ exports.deleteUser = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'User deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
     });
   } catch (error) {
     res.status(500).json({
@@ -190,6 +580,84 @@ exports.toggleUserActivation = async (req, res, next) => {
   }
 };
 
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Toggle user activation status (deactivate if active, activate if inactive)
 // @route   PUT /api/admin/users/:id/deactivate
 // @access  Private/Admin
@@ -211,6 +679,84 @@ exports.deactivateUser = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
     });
   } catch (error) {
     res.status(500).json({
@@ -252,6 +798,84 @@ exports.activateUser = async (req, res, next) => {
   }
 };
 
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Get pending courses
 // @route   GET /api/admin/courses/pending
 // @access  Private/Admin
@@ -265,6 +889,84 @@ exports.getPendingCourses = async (req, res, next) => {
       success: true,
       count: courses.length,
       data: courses
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
     });
   } catch (error) {
     res.status(500).json({
@@ -299,6 +1001,84 @@ exports.getPendingQuests = async (req, res, next) => {
   }
 };
 
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Approve course
 // @route   PUT /api/admin/courses/:id/approval/approve
 // @access  Private/Admin
@@ -321,6 +1101,84 @@ exports.approveCourse = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Course approved successfully',
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
       data: course
     });
   } catch (error) {
@@ -368,6 +1226,84 @@ exports.rejectCourse = async (req, res, next) => {
   }
 };
 
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Approve quest
 // @route   PUT /api/admin/quests/:id/approval/approve
 // @access  Private/Admin
@@ -391,6 +1327,84 @@ exports.approveQuest = async (req, res, next) => {
       success: true,
       message: 'Quest approved successfully',
       data: quest
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
     });
   } catch (error) {
     res.status(500).json({
@@ -427,6 +1441,84 @@ exports.rejectQuest = async (req, res, next) => {
       success: true,
       message: 'Quest rejected successfully',
       data: quest
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
     });
   } catch (error) {
     res.status(500).json({
@@ -553,3 +1645,105 @@ exports.getDashboardStats = async (req, res, next) => {
     });
   }
 };
+
+// @desc    Publish a course
+// @route   PUT /api/admin/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish a course
+// @route   PUT /api/admin/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    // Update publication status
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};""  
+"// @desc    Get all courses (admin view - includes unpublished)"  
+"// @route   GET /api/admin/courses"  
+"// @access  Private/Admin"  
+"exports.getAllCourses = async (req, res, next) => {"  
+"  try {"  
+"    // Find all courses regardless of publication status"  
+"    const courses = await Course.find({})"  
+"      .populate('creator', 'name email')"  
+"      .populate('mentors', 'name email')"  
+"      .sort({ createdAt: -1 });"  
+""  
+"    res.status(200).json({"  
+"      success: true,"  
+"      count: courses.length,"  
+"      data: courses"  
+"    });"  
+"  } catch (error) {"  
+"    res.status(500).json({"  
+"      success: false,"  
+"      message: 'Server error',"  
+"      error: error.message"  
+"    });"  
+"  }"  
+"};" 

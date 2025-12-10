@@ -120,9 +120,9 @@ export const enrollmentsAPI = {
 export const adminAPI = {
   getStats: () => api.get('/admin/stats'),
   getPendingCourses: () => api.get('/admin/courses/pending'),
-  approveCourse: (id) => api.put(`/admin/courses/${id}/approve`),
+  approveCourse: (id) => api.put(`/admin/courses/${id}/approval/approve`),
   rejectCourse: (id, reason) =>
-    api.put(`/admin/courses/${id}/reject`, { reason }),
+    api.put(`/admin/courses/${id}/approval/reject`, { reason }),
   getPendingPrices: () => api.get('/admin/pricing/pending'),
   approvePrice: (id) => api.put(`/admin/courses/${id}/approve-price`),
   rejectPrice: (id, reason) =>
@@ -135,6 +135,9 @@ export const adminAPI = {
   updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
   deactivateUser: (id) => api.put(`/admin/users/${id}/deactivate`),
   activateUser: (id) => api.put(`/admin/users/${id}/activate`),
+  publishCourse: (id) => api.put(`/admin/courses/${id}/publish`),
+  unpublishCourse: (id) => api.put(`/admin/courses/${id}/unpublish`),
+  getAllCourses: () => api.get('/admin/courses'),
 };
 
 // Forum API

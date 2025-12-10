@@ -21,8 +21,29 @@ export default function CreateCourse() {
     difficulty: 'beginner',
     price: { amount: 0, currency: 'USD' },
     thumbnail: '',
-    isPublished: false
+    isPublished: false,
+    materials: []  // Initialize materials as an empty array
   });
+
+  // State for managing materials
+  const [materialForm, setMaterialForm] = useState({
+    title: '',
+    description: '',
+    order: 1
+  });
+
+  // State for managing sub-materials (lessons within a material)
+  const [subMaterialForm, setSubMaterialForm] = useState({
+    title: '',
+    type: 'video',
+    content: '',
+    duration: 0,
+    url: '',
+    order: 1
+  });
+
+  // Selected material for adding sub-materials
+  const [selectedMaterialId, setSelectedMaterialId] = useState(null);
 
   const handleChange = (name, value) => {
     if (name === 'price.amount') {
@@ -41,6 +62,94 @@ export default function CreateCourse() {
     }
   };
 
+  const handleMaterialChange = (name, value) => {
+    setMaterialForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubMaterialChange = (name, value) => {
+    setSubMaterialForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Add a new material (section/chapter)
+  const addMaterial = () => {
+    if (!materialForm.title.trim()) {
+      setError('Material title is required');
+      return;
+    }
+
+    const newMaterial = {
+      _id: Date.now().toString(), // Temporary ID until saved
+      title: materialForm.title,
+      description: materialForm.description,
+      order: materialForm.order,
+      subMaterials: []
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      materials: [...prev.materials, newMaterial]
+    }));
+
+    // Reset form
+    setMaterialForm({
+      title: '',
+      description: '',
+      order: prev => prev.order + 1
+    });
+
+    setError('');
+  };
+
+  // Add a sub-material (lesson/component) to a material
+  const addSubMaterial = (materialId) => {
+    if (!subMaterialForm.title.trim()) {
+      setError('Sub-material title is required');
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      materials: prev.materials.map(material => {
+        if (material._id === materialId) {
+          return {
+            ...material,
+            subMaterials: [
+              ...material.subMaterials,
+              {
+                _id: Date.now().toString(), // Temporary ID until saved
+                title: subMaterialForm.title,
+                type: subMaterialForm.type,
+                content: subMaterialForm.content,
+                duration: subMaterialForm.duration,
+                url: subMaterialForm.url,
+                order: subMaterialForm.order
+              }
+            ]
+          };
+        }
+        return material;
+      })
+    }));
+
+    // Reset form
+    setSubMaterialForm({
+      title: '',
+      type: 'video',
+      content: '',
+      duration: 0,
+      url: '',
+      order: prev => prev.order + 1
+    });
+
+    setError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -48,8 +157,28 @@ export default function CreateCourse() {
     setLoading(true);
 
     try {
+      // Format materials properly for the backend
+      const formattedMaterials = formData.materials.map(material => {
+        return {
+          title: material.title,
+          description: material.description || '',
+          order: material.order,
+          subMaterials: material.subMaterials ? material.subMaterials.map(sub => {
+            return {
+              title: sub.title,
+              type: sub.type,
+              content: sub.content,
+              duration: sub.duration || 0,
+              url: sub.url || '',
+              order: sub.order
+            };
+          }) : []
+        };
+      });
+
       const courseData = {
         ...formData,
+        materials: formattedMaterials,
         price: formData.price
       };
 
@@ -184,17 +313,260 @@ export default function CreateCourse() {
               />
             </div>
           </div>
-          
+
+          {/* Materials Section */}
+          <div className="mt-8 border-t pt-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Course Materials</h2>
+
+            {/* Add Material Form */}
+            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-medium text-lg mb-4 text-gray-800">Add New Material (Section/Chapter)</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Material Title</label>
+                  <input
+                    type="text"
+                    value={materialForm.title}
+                    onChange={(e) => handleMaterialChange('title', e.target.value)}
+                    className="input w-full"
+                    placeholder="Chapter title (e.g. Introduction to JavaScript)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
+                  <input
+                    type="number"
+                    value={materialForm.order}
+                    onChange={(e) => handleMaterialChange('order', parseInt(e.target.value) || 1)}
+                    className="input w-full"
+                    min="1"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+                <textarea
+                  value={materialForm.description}
+                  onChange={(e) => handleMaterialChange('description', e.target.value)}
+                  className="input w-full"
+                  rows="2"
+                  placeholder="Brief description of this material..."
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={addMaterial}
+                className="btn btn-primary"
+              >
+                Add Material
+              </button>
+            </div>
+
+            {/* Display Materials */}
+            <div className="space-y-6">
+              {formData.materials.length > 0 ? (
+                formData.materials
+                  .sort((a, b) => a.order - b.order)
+                  .map((material, materialIndex) => (
+                    <div key={material._id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="font-medium text-gray-900 text-lg"> #{material.order}. {material.title}</h4>
+                          {material.description && (
+                            <p className="text-gray-600 text-sm mt-1">{material.description}</p>
+                          )}
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubMaterialForm(prev => ({...prev, order: material.subMaterials.length + 1}));
+                              setSelectedMaterialId(material._id);
+                            }}
+                            className="btn btn-sm btn-secondary"
+                          >
+                            Add Lesson
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                materials: prev.materials.filter((_, idx) => idx !== materialIndex)
+                              }));
+                            }}
+                            className="btn btn-sm btn-danger"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Sub-Materials (Lessons) for this Material */}
+                      <div className="ml-4 space-y-3">
+                        <h5 className="font-medium text-gray-800">Lessons:</h5>
+                        {selectedMaterialId === material._id && (
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Lesson Title</label>
+                                <input
+                                  type="text"
+                                  value={subMaterialForm.title}
+                                  onChange={(e) => handleSubMaterialChange('title', e.target.value)}
+                                  className="input w-full"
+                                  placeholder="Lesson title (e.g. JavaScript Variables)"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                                <select
+                                  value={subMaterialForm.type}
+                                  onChange={(e) => handleSubMaterialChange('type', e.target.value)}
+                                  className="input w-full"
+                                >
+                                  <option value="video">Video</option>
+                                  <option value="article">Article</option>
+                                  <option value="assignment">Assignment</option>
+                                  <option value="quiz">Quiz</option>
+                                  <option value="resource">Resource</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="mb-3">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                              <textarea
+                                value={subMaterialForm.content}
+                                onChange={(e) => handleSubMaterialChange('content', e.target.value)}
+                                className="input w-full"
+                                rows="3"
+                                placeholder="Lesson content or description..."
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
+                                <input
+                                  type="number"
+                                  value={subMaterialForm.duration}
+                                  onChange={(e) => handleSubMaterialChange('duration', parseInt(e.target.value) || 0)}
+                                  className="input w-full"
+                                  min="0"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">URL (Optional)</label>
+                                <input
+                                  type="text"
+                                  value={subMaterialForm.url}
+                                  onChange={(e) => handleSubMaterialChange('url', e.target.value)}
+                                  className="input w-full"
+                                  placeholder="https://example.com/video"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
+                                <input
+                                  type="number"
+                                  value={subMaterialForm.order}
+                                  onChange={(e) => handleSubMaterialChange('order', parseInt(e.target.value) || 1)}
+                                  className="input w-full"
+                                  min="1"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedMaterialId(null)}
+                                className="btn btn-sm btn-secondary"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => addSubMaterial(material._id)}
+                                className="btn btn-sm btn-primary"
+                              >
+                                Add Lesson
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {material.subMaterials && material.subMaterials.length > 0 ? (
+                          <div className="space-y-2">
+                            {material.subMaterials
+                              .sort((a, b) => a.order - b.order)
+                              .map((subMaterial, subIndex) => (
+                                <div key={subMaterial._id} className="flex justify-between items-center bg-white p-3 rounded border">
+                                  <div>
+                                    <span className="text-gray-500 text-sm">#{subMaterial.order}</span>
+                                    <span className="ml-2 font-medium text-gray-900">{subMaterial.title}</span>
+                                    <span className="ml-2 text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                      {subMaterial.type}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        materials: prev.materials.map(mat => {
+                                          if (mat._id === material._id) {
+                                            return {
+                                              ...mat,
+                                              subMaterials: mat.subMaterials.filter((_, idx) => idx !== subIndex)
+                                            };
+                                          }
+                                          return mat;
+                                        })
+                                      }));
+                                    }}
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-4 text-gray-500">
+                            No lessons added yet. Click 'Add Lesson' to create one.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No materials added yet. Create your first material (section/chapter) above.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Submit Button */}
           <div className="mt-8 flex justify-end space-x-4">
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               variant="secondary"
               onClick={() => navigate('/mentor')}
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               variant="primary"
               disabled={loading}
             >

@@ -9,6 +9,7 @@ export default function AllCourses() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchCourses();
@@ -17,7 +18,7 @@ export default function AllCourses() {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const response = await coursesAPI.getAll();
+      const response = await adminAPI.getAllCourses();
       setCourses(response.data.data || []);
       setError('');
     } catch (err) {
@@ -28,14 +29,75 @@ export default function AllCourses() {
     }
   };
 
+  // Handle course publishing/unpublishing
+  const handleTogglePublish = async (courseId, isPublished) => {
+    try {
+      if (isPublished) {
+        await adminAPI.publishCourse(courseId);
+      } else {
+        await adminAPI.unpublishCourse(courseId);
+      }
+      // Refresh the course list
+      fetchCourses();
+    } catch (err) {
+      setError('Failed to update course publication status. Please try again.');
+      console.error('Error toggling course publication:', err);
+    }
+  };
+
+  // Handle course approval
+  const handleApproveCourse = async (courseId) => {
+    try {
+      await adminAPI.approveCourse(courseId);
+      // Refresh the course list
+      fetchCourses();
+    } catch (err) {
+      setError('Failed to approve course. Please try again.');
+      console.error('Error approving course:', err);
+    }
+  };
+
+  // Handle course rejection
+  const handleRejectCourse = async (courseId) => {
+    const reason = prompt('Enter reason for rejection:');
+    if (reason) {
+      try {
+        await adminAPI.rejectCourse(courseId, reason);
+        // Refresh the course list
+        fetchCourses();
+      } catch (err) {
+        setError('Failed to reject course. Please try again.');
+        console.error('Error rejecting course:', err);
+      }
+    }
+  };
+
   if (loading) return <Loading />;
-  
+
   if (error) return <Alert type="error" message={error} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">All Courses</h1>
-      
+
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search courses by title, description, category, or creator..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+          <div className="absolute left-3 top-2.5 text-gray-400">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="mb-6">
         <div className="border-b border-gray-200">
@@ -86,7 +148,37 @@ export default function AllCourses() {
       {/* Course List */}
       {courses.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map(course => (
+          {courses
+            .filter(course => {
+              // Apply active tab filter
+              if (activeTab === 'all') {
+                // No filter needed for "all"
+              } else if (activeTab === 'published' && !course.isPublished) {
+                return false;
+              } else if (activeTab === 'unpublished' && course.isPublished) {
+                return false;
+              }
+
+              // Apply search filter if query exists
+              if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                const title = course.title.toLowerCase();
+                const description = course.description.toLowerCase();
+                const category = course.category.toLowerCase();
+                const creatorName = (course.creator?.name || '').toLowerCase();
+
+                // Check if search query matches any of the fields
+                return (
+                  title.includes(query) ||
+                  description.includes(query) ||
+                  category.includes(query) ||
+                  creatorName.includes(query)
+                );
+              }
+
+              return true;
+            })
+            .map(course => (
             <div key={course._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               {course.thumbnail ? (
                 <img
@@ -145,16 +237,56 @@ export default function AllCourses() {
                     By {course.creator?.name || 'Unknown'}
                   </div>
 
-                  <a
-                    href={`/courses/${course._id}`}
-                    className="btn btn-primary btn-sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.location.href = `/courses/${course._id}`;
-                    }}
-                  >
-                    View Course
-                  </a>
+                  <div className="flex space-x-2">
+                    <a
+                      href={`/courses/${course._id}`}
+                      className="btn btn-secondary btn-sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.location.href = `/courses/${course._id}`;
+                      }}
+                    >
+                      View Course
+                    </a>
+                    <a
+                      href={`/mentor/edit-course/${course._id}`}
+                      className="btn btn-primary btn-sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.location.href = `/mentor/edit-course/${course._id}`;
+                      }}
+                    >
+                      Edit Course
+                    </a>
+                    {/* Management Actions Dropdown */}
+                    <div className="relative group">
+                      <button className="btn btn-sm btn-outline">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                        </svg>
+                      </button>
+                      <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                          onClick={() => handleTogglePublish(course._id, !course.isPublished)}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          {course.isPublished ? 'Unpublish' : 'Publish'}
+                        </button>
+                        <button
+                          onClick={() => handleApproveCourse(course._id)}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Approve Course
+                        </button>
+                        <button
+                          onClick={() => handleRejectCourse(course._id)}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-gray-100"
+                        >
+                          Reject Course
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -219,8 +219,10 @@ exports.updateQuest = async (req, res, next) => {
       });
     }
 
-    // Check if user is the creator, or admin (since mentors can be assigned to courses by admins)
-    if (req.user.role !== 'admin' && quest.creator.toString() !== req.user.id) {
+    // Check if user is the creator, a mentor for the associated course, or admin
+    if (req.user.role !== 'admin' &&
+        quest.creator.toString() !== req.user.id &&
+        !course.mentors.some(mentor => mentor.toString() === req.user.id)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this quest'

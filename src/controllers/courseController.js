@@ -364,6 +364,82 @@ exports.updateAdminApprovedPrice = async (req, res, next) => {
   }
 };
 
+// @desc    Publish course
+// @route   PUT /api/courses/:id/publish
+// @access  Private/Admin
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check authorization (only admin can publish/unpublish courses)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to publish this course'
+      });
+    }
+
+    course.isPublished = true;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unpublish course
+// @route   PUT /api/courses/:id/unpublish
+// @access  Private/Admin
+exports.unpublishCourse = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check authorization (only admin can publish/unpublish courses)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to unpublish this course'
+      });
+    }
+
+    course.isPublished = false;
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Search courses
 // @route   GET /api/courses/search
 // @access  Public

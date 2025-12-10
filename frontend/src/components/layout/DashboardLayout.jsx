@@ -19,6 +19,7 @@ export default function DashboardLayout() {
           { name: 'Pending Approvals', path: '/admin/approvals', icon: '⏳' },
           { name: 'User Management', path: '/admin/users', icon: '👥' },
           { name: 'All Courses', path: '/admin/courses', icon: '📚' },
+          { name: 'Content Management', path: '/mentor/content', icon: '📝' },
         ];
       case 'mentor':
         return [
