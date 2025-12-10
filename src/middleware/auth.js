@@ -68,6 +68,45 @@ exports.authorize = (...roles) => {
   };
 };
 
+// Optional auth - set req.user if token exists, but don't fail if not
+exports.optionalAuth = async (req, res, next) => {
+  try {
+    let token;
+
+    // Check for token in headers
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (token) {
+      try {
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Get user from token
+        const user = await User.findById(decoded.id);
+
+        if (user && user.isActive) {
+          req.user = user;
+        }
+        // If user is not found or not active, don't set req.user (leaving it undefined)
+      } catch (error) {
+        // If token is invalid, just continue without user
+        // Do not set req.user (leaving it undefined)
+      }
+    }
+    // If no token is present, req.user remains undefined
+
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 // Check if user owns the resource
 exports.checkOwnership = (model) => {
   return async (req, res, next) => {

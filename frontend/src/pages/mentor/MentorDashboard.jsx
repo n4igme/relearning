@@ -107,12 +107,6 @@ export default function MentorDashboard() {
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-4">
-          <a href="/mentor/create-course" className="btn btn-primary">
-            Create New Course
-          </a>
-          <a href="/mentor/create-quest" className="btn btn-secondary">
-            Create Quest
-          </a>
           <a href="/mentor/content" className="btn btn-secondary">
             Manage Content
           </a>

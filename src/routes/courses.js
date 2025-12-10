@@ -26,7 +26,7 @@ router.route('/')
 router.route('/search')
   .get(searchCourses);
 
-// Private routes for mentors and admins (including getting specific courses)
+// Protected routes for mentors and admins
 router.use(protect);
 
 router.route('/:id')

@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { questsAPI } from '../../utils/api';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import useAuthStore from '../../store/authStore';
+import { questsAPI, coursesAPI } from '../../utils/api';
 import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
 import Input from '../../components/common/Input';
@@ -10,18 +11,51 @@ import Button from '../../components/common/Button';
 
 export default function CreateQuest() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+  const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+
+  // Get course ID from URL parameters if available
+  const courseParamId = searchParams.get('course');
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    course: '',
+    course: courseParamId || '', // Pre-fill if course ID is provided in URL
     passingScore: 70,
     timeLimit: 60,
     questions: []
   });
+
+  // Fetch courses for the mentor
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setCoursesLoading(true);
+        const response = await coursesAPI.getMyCourses();
+        setCourses(response.data.data || []);
+
+        // If a course ID was provided in URL but not in the form, set it
+        if (courseParamId && !formData.course) {
+          setFormData(prev => ({
+            ...prev,
+            course: courseParamId
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching courses:', err);
+        setError('Failed to load courses');
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, [courseParamId, formData.course]);
 
   const handleChange = (name, value) => {
     setFormData(prev => ({
@@ -105,7 +139,13 @@ export default function CreateQuest() {
       await questsAPI.create(questData);
       setSuccess('Quest created successfully!');
       setTimeout(() => {
-        navigate('/mentor');
+        // If a specific course was provided, go back to its content management
+        if (courseParamId) {
+          navigate(`/mentor/content/${courseParamId}`);
+        } else {
+          // Otherwise, go back to general mentor dashboard
+          navigate('/mentor');
+        }
       }, 2000);
     } catch (err) {
       setError(err.message || err.response?.data?.message || 'Failed to create quest. Please try again.');
@@ -180,17 +220,23 @@ export default function CreateQuest() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select Course
               </label>
-              <Select
-                name="course"
-                value={formData.course}
-                onChange={(e) => handleChange('course', e.target.value)}
-                options={[
-                  { value: '', label: 'Select a course' },
-                  { value: 'course1', label: 'Sample Course 1' },
-                  { value: 'course2', label: 'Sample Course 2' }
-                ]}
-                required
-              />
+              {coursesLoading ? (
+                <div className="input">Loading courses...</div>
+              ) : (
+                <Select
+                  name="course"
+                  value={formData.course}
+                  onChange={(e) => handleChange('course', e.target.value)}
+                  options={[
+                    { value: '', label: 'Select a course' },
+                    ...courses.map(course => ({
+                      value: course._id,
+                      label: course.title
+                    }))
+                  ]}
+                  required
+                />
+              )}
               <p className="mt-1 text-xs text-gray-500">Select the course this quest belongs to</p>
             </div>
             
@@ -304,15 +350,23 @@ export default function CreateQuest() {
           </div>
           
           <div className="mt-8 flex justify-end space-x-4">
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               variant="secondary"
-              onClick={() => navigate('/mentor')}
+              onClick={() => {
+                // If a specific course was provided, go back to its content management
+                if (courseParamId) {
+                  navigate(`/mentor/content/${courseParamId}`);
+                } else {
+                  // Otherwise, go back to general mentor dashboard
+                  navigate('/mentor');
+                }
+              }}
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               variant="primary"
               disabled={loading}
             >

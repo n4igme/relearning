@@ -1,10 +1,10 @@
 {
   "info": {
     "_postman_id": "elearning-platform-api",
-    "name": "eLearning Platform API",
-    "description": "Complete API collection for eLearning Platform with Admin, Mentor, and Student roles",
+    "name": "eLearning Platform API - Updated",
+    "description": "Complete API collection for eLearning Platform with Admin, Mentor, and Student roles - Updated with latest routes and changes",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "elearning-platform"
+    "_exporter_id": "elearning-platform-updated"
   },
   "item": [
     {
@@ -29,33 +29,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"student\"\n}"
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"student\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/api/auth/register",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "register"
-              ]
-            },
-            "description": "Register a new user. Role can be 'student' or 'mentor'. Admin role can only be created by existing admins."
+              "raw": "{{BASE_URL}}/api/auth/register",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "register"]
+            }
           },
           "response": []
         },
         {
-          "name": "Login",
+          "name": "Login User",
           "event": [
             {
               "listen": "test",
@@ -74,469 +67,44 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"admin@elearning.com\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/api/auth/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
-            },
-            "description": "Login with email and password. Returns JWT token."
+              "raw": "{{BASE_URL}}/api/auth/login",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "login"]
+            }
           },
           "response": []
         },
         {
           "name": "Get Current User",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/auth/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "me"
-              ]
-            },
-            "description": "Get current logged in user details"
-          },
-          "response": []
-        },
-        {
-          "name": "Update Profile",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"name\": \"John Updated\",\n    \"bio\": \"I am a student learning new things\",\n    \"avatar\": \"https://example.com/avatar.jpg\"\n}"
-            },
             "url": {
-              "raw": "{{base_url}}/api/auth/profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "profile"
-              ]
-            },
-            "description": "Update user profile"
+              "raw": "{{BASE_URL}}/api/auth/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "me"]
+            }
           },
           "response": []
         }
-      ],
-      "description": "User authentication and profile management"
-    },
-    {
-      "name": "Admin",
-      "item": [
-        {
-          "name": "Dashboard Stats",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/admin/stats",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "stats"
-              ]
-            },
-            "description": "Get dashboard statistics (Admin only)"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Pending Courses",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/admin/courses/pending",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "courses",
-                "pending"
-              ]
-            },
-            "description": "Get all pending course submissions"
-          },
-          "response": []
-        },
-        {
-          "name": "Approve Course",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/admin/courses/:courseId/approve",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "courses",
-                ":courseId",
-                "approve"
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Approve a course"
-          },
-          "response": []
-        },
-        {
-          "name": "Reject Course",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"reason\": \"Course content needs improvement\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/admin/courses/:courseId/reject",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "courses",
-                ":courseId",
-                "reject"
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Reject a course with reason"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Pending Prices",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/admin/pricing/pending",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "pricing",
-                "pending"
-              ]
-            },
-            "description": "Get all pending price proposals"
-          },
-          "response": []
-        },
-        {
-          "name": "Approve Price",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/admin/courses/:courseId/approve-price",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "courses",
-                ":courseId",
-                "approve-price"
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Approve course pricing"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Pending Quests",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/admin/quests/pending",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "quests",
-                "pending"
-              ]
-            },
-            "description": "Get all pending quest submissions"
-          },
-          "response": []
-        },
-        {
-          "name": "Approve Quest",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/admin/quests/:questId/approve",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "quests",
-                ":questId",
-                "approve"
-              ],
-              "variable": [
-                {
-                  "key": "questId",
-                  "value": "{{quest_id}}"
-                }
-              ]
-            },
-            "description": "Approve a quest"
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Users",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/admin/users",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "users"
-              ]
-            },
-            "description": "Get all users in the system"
-          },
-          "response": []
-        },
-        {
-          "name": "Update User Role",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"role\": \"mentor\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/admin/users/:userId/role",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "users",
-                ":userId",
-                "role"
-              ],
-              "variable": [
-                {
-                  "key": "userId",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Update user role (admin, mentor, student)"
-          },
-          "response": []
-        }
-      ],
-      "description": "Admin-only endpoints for managing the platform"
+      ]
     },
     {
       "name": "Courses",
@@ -547,500 +115,261 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/courses?page=1&limit=10&category=programming",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "category",
-                  "value": "programming"
-                },
-                {
-                  "key": "difficulty",
-                  "value": "beginner",
-                  "disabled": true
-                },
-                {
-                  "key": "search",
-                  "value": "nodejs",
-                  "disabled": true
-                }
-              ]
-            },
-            "description": "Get all approved courses with pagination and filters"
+              "raw": "{{BASE_URL}}/api/courses",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "courses"]
+            }
           },
           "response": []
         },
         {
           "name": "Get Single Course",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.environment.set(\"course_id\", jsonData.data._id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/api/courses/:courseId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                ":courseId"
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Get detailed information about a specific course"
+              "raw": "{{BASE_URL}}/api/courses/6938e5edc7984a3132b8a0da",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "courses", "6938e5edc7984a3132b8a0da"]
+            }
           },
           "response": []
         },
         {
           "name": "Create Course",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.environment.set(\"course_id\", jsonData.data._id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Introduction to Node.js\",\n    \"description\": \"Learn Node.js from scratch. Build REST APIs, work with databases, and deploy applications.\",\n    \"category\": \"programming\",\n    \"difficulty\": \"beginner\",\n    \"thumbnail\": \"https://example.com/nodejs-thumb.jpg\",\n    \"price\": {\n        \"amount\": 49.99,\n        \"currency\": \"USD\"\n    },\n    \"tags\": [\"nodejs\", \"javascript\", \"backend\", \"api\"],\n    \"content\": [\n        {\n            \"title\": \"Introduction to Node.js\",\n            \"type\": \"video\",\n            \"url\": \"https://example.com/video1.mp4\",\n            \"duration\": 30,\n            \"order\": 1\n        },\n        {\n            \"title\": \"Setting up Node.js\",\n            \"type\": \"article\",\n            \"content\": \"Follow these steps to install Node.js...\",\n            \"duration\": 15,\n            \"order\": 2\n        }\n    ]\n}"
+              "raw": "{\n  \"title\": \"New Course\",\n  \"description\": \"Course description\",\n  \"category\": \"programming\",\n  \"difficulty\": \"beginner\",\n  \"price\": {\n    \"amount\": 100,\n    \"currency\": \"USD\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/api/courses",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses"
-              ]
-            },
-            "description": "Create a new course (Mentor/Admin only)"
+              "raw": "{{BASE_URL}}/api/courses",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "courses"]
+            }
           },
           "response": []
         },
         {
           "name": "Update Course",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "PUT",
             "header": [
               {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Advanced Node.js\",\n    \"description\": \"Updated description\"\n}"
+              "raw": "{\n  \"title\": \"Updated Course Title\",\n  \"description\": \"Updated description\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/api/courses/:courseId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                ":courseId"
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Update course details (Creator/Admin only)"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Course",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/courses/:courseId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                ":courseId"
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Delete a course (Creator/Admin only)"
+              "raw": "{{BASE_URL}}/api/courses/6938e5edc7984a3132b8a0da",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "courses", "6938e5edc7984a3132b8a0da"]
+            }
           },
           "response": []
         },
         {
           "name": "Get My Courses (Mentor)",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/courses/mentor/my-courses",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                "mentor",
-                "my-courses"
-              ]
-            },
-            "description": "Get all courses created by the mentor"
-          },
-          "response": []
-        },
-        {
-          "name": "Add Material (Bab)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"title\": \"Bab 1: Introduction\",\n    \"description\": \"Introduction to the course\",\n    \"order\": 1\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/courses/{{course_id}}/materials",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                "{{course_id}}",
-                "materials"
-              ]
-            },
-            "description": "Add a new material (Bab/Chapter) to a course"
-          },
-          "response": []
-        },
-        {
-          "name": "Update Material (Bab)",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"title\": \"Bab 1: Updated Title\",\n    \"description\": \"Updated description\",\n    \"order\": 1\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/courses/{{course_id}}/materials/{{material_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                "{{course_id}}",
-                "materials",
-                "{{material_id}}"
-              ]
-            },
-            "description": "Update an existing material (Bab)"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Material (Bab)",
-          "request": {
-            "method": "DELETE",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/courses/{{course_id}}/materials/{{material_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                "{{course_id}}",
-                "materials",
-                "{{material_id}}"
-              ]
-            },
-            "description": "Delete a material (Bab) from a course"
-          },
-          "response": []
-        },
-        {
-          "name": "Add Sub-Material (Sub-Bab)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"title\": \"1.1 Course Overview\",\n    \"type\": \"video\",\n    \"url\": \"https://example.com/video.mp4\",\n    \"duration\": 15,\n    \"order\": 1\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/courses/{{course_id}}/materials/{{material_id}}/sub-materials",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                "{{course_id}}",
-                "materials",
-                "{{material_id}}",
-                "sub-materials"
-              ]
-            },
-            "description": "Add a new sub-material (Sub-Bab) to a material. Type can be: video, article, resource"
-          },
-          "response": []
-        },
-        {
-          "name": "Update Sub-Material (Sub-Bab)",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"title\": \"1.1 Updated Title\",\n    \"type\": \"video\",\n    \"url\": \"https://example.com/video-new.mp4\",\n    \"duration\": 20,\n    \"order\": 1\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/courses/{{course_id}}/materials/{{material_id}}/sub-materials/{{sub_material_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                "{{course_id}}",
-                "materials",
-                "{{material_id}}",
-                "sub-materials",
-                "{{sub_material_id}}"
-              ]
-            },
-            "description": "Update an existing sub-material (Sub-Bab)"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Sub-Material (Sub-Bab)",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/courses/{{course_id}}/materials/{{material_id}}/sub-materials/{{sub_material_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "courses",
-                "{{course_id}}",
-                "materials",
-                "{{material_id}}",
-                "sub-materials",
-                "{{sub_material_id}}"
-              ]
-            },
-            "description": "Delete a sub-material (Sub-Bab) from a material"
+              "raw": "{{BASE_URL}}/api/courses/mentor/my-courses",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "courses", "mentor", "my-courses"]
+            }
           },
           "response": []
         }
-      ],
-      "description": "Course management endpoints"
+      ]
+    },
+    {
+      "name": "Materials",
+      "item": [
+        {
+          "name": "Get Course Materials",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/courses/6938e5edc7984a3132b8a0da/materials",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "courses", "6938e5edc7984a3132b8a0da", "materials"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Material to Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chapter 1: Introduction\",\n  \"description\": \"Introductory chapter\",\n  \"order\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/courses/6938e5edc7984a3132b8a0da/materials",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "courses", "6938e5edc7984a3132b8a0da", "materials"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Material",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chapter 1: Updated Introduction\",\n  \"order\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/courses/6938e5edc7984a3132b8a0da/materials/materialId123",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "courses", "6938e5edc7984a3132b8a0da", "materials", "materialId123"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Material",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/courses/6938e5edc7984a3132b8a0da/materials/materialId123",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "courses", "6938e5edc7984a3132b8a0da", "materials", "materialId123"]
+            }
+          },
+          "response": []
+        }
+      ]
     },
     {
       "name": "Quests",
       "item": [
         {
           "name": "Create Quest",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.environment.set(\"quest_id\", jsonData.data._id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Node.js Fundamentals Quiz\",\n    \"description\": \"Test your knowledge of Node.js basics\",\n    \"courseId\": \"{{course_id}}\",\n    \"passingScore\": 70,\n    \"timeLimit\": 30,\n    \"questions\": [\n        {\n            \"question\": \"What is Node.js?\",\n            \"type\": \"multiple-choice\",\n            \"options\": [\n                {\"text\": \"A JavaScript runtime\", \"isCorrect\": true},\n                {\"text\": \"A database\", \"isCorrect\": false},\n                {\"text\": \"A framework\", \"isCorrect\": false},\n                {\"text\": \"A programming language\", \"isCorrect\": false}\n            ],\n            \"points\": 10,\n            \"explanation\": \"Node.js is a JavaScript runtime built on Chrome's V8 engine\"\n        },\n        {\n            \"question\": \"Node.js is single-threaded\",\n            \"type\": \"true-false\",\n            \"options\": [\n                {\"text\": \"True\", \"isCorrect\": true},\n                {\"text\": \"False\", \"isCorrect\": false}\n            ],\n            \"points\": 10\n        },\n        {\n            \"question\": \"What command is used to initialize a Node.js project?\",\n            \"type\": \"short-answer\",\n            \"correctAnswer\": \"npm init\",\n            \"points\": 10\n        }\n    ]\n}"
+              "raw": "{\n  \"title\": \"JavaScript Fundamentals Quiz\",\n  \"description\": \"Test your knowledge of JS basics\",\n  \"course\": \"6938e5edc7984a3132b8a0da\",\n  \"passingScore\": 70,\n  \"timeLimit\": 30,\n  \"questions\": [\n    {\n      \"question\": \"What does JS stand for?\",\n      \"type\": \"multiple-choice\",\n      \"options\": [\n        {\"text\": \"Java Syntax\", \"isCorrect\": false},\n        {\"text\": \"JavaScript\", \"isCorrect\": true}\n      ],\n      \"points\": 10\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/api/quests",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "quests"
-              ]
-            },
-            "description": "Create a new quest/assessment (Mentor/Admin only)"
+              "raw": "{{BASE_URL}}/api/quests",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "quests"]
+            }
           },
           "response": []
         },
@@ -1048,1126 +377,274 @@
           "name": "Get Course Quests",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/api/quests/course/:courseId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "quests",
-                "course",
-                ":courseId"
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Get all approved quests for a course"
+              "raw": "{{BASE_URL}}/api/quests/course/6938e5edc7984a3132b8a0da",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "quests", "course", "6938e5edc7984a3132b8a0da"]
+            }
           },
           "response": []
         },
         {
           "name": "Get Single Quest",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/quests/:questId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "quests",
-                ":questId"
-              ],
-              "variable": [
-                {
-                  "key": "questId",
-                  "value": "{{quest_id}}"
-                }
-              ]
-            },
-            "description": "Get quest details (correct answers hidden for students)"
-          },
-          "response": []
-        },
-        {
-          "name": "Update Quest",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"title\": \"Updated Quest Title\",\n    \"passingScore\": 75\n}"
-            },
             "url": {
-              "raw": "{{base_url}}/api/quests/:questId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "quests",
-                ":questId"
-              ],
-              "variable": [
-                {
-                  "key": "questId",
-                  "value": "{{quest_id}}"
-                }
-              ]
-            },
-            "description": "Update quest (Creator/Admin only)"
+              "raw": "{{BASE_URL}}/api/quests/questId123",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "quests", "questId123"]
+            }
           },
           "response": []
         },
         {
           "name": "Get My Quests (Mentor)",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/api/quests/mentor/my-quests",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "quests",
-                "mentor",
-                "my-quests"
-              ]
-            },
-            "description": "Get all quests created by the mentor"
+              "raw": "{{BASE_URL}}/api/quests/mentor/my-quests",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "quests", "mentor", "my-quests"]
+            }
           },
           "response": []
         }
-      ],
-      "description": "Quest/Assessment management endpoints"
+      ]
     },
     {
-      "name": "Student",
+      "name": "Admin",
       "item": [
         {
-          "name": "Enroll in Course",
+          "name": "Get Pending Courses",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/student/enroll/:courseId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "enroll",
-                ":courseId"
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Enroll in a course (creates payment and enrollment)"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Enrolled Courses",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/api/student/courses",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "courses"
-              ]
-            },
-            "description": "Get all enrolled courses with progress"
+              "raw": "{{BASE_URL}}/api/admin/courses/pending",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "admin", "courses", "pending"]
+            }
           },
           "response": []
         },
         {
-          "name": "Update Course Progress",
+          "name": "Approve Course",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "PUT",
             "header": [
               {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/admin/courses/6938e5edc7984a3132b8a0da/approve",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "admin", "courses", "6938e5edc7984a3132b8a0da", "approve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Pending Quests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/admin/quests/pending",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "admin", "quests", "pending"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Quest",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/admin/quests/questId123/approve",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "admin", "quests", "questId123", "approve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/admin/users",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "admin", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"progress\": 75\n}"
+              "raw": "{\n  \"role\": \"mentor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/api/student/courses/:courseId/progress",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "courses",
-                ":courseId",
-                "progress"
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Update course progress (0-100)"
+              "raw": "{{BASE_URL}}/api/admin/users/userId123/role",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "admin", "users", "userId123", "role"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "Enroll in Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/student/enroll/6938e5edc7984a3132b8a0da",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "student", "enroll", "6938e5edc7984a3132b8a0da"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Courses (Student)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/student/courses",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "student", "courses"]
+            }
           },
           "response": []
         },
         {
           "name": "Submit Quest Attempt",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    if (jsonData.data.certificate) {",
-                  "        pm.environment.set(\"certificate_id\", jsonData.data.certificate);",
-                  "    }",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"answers\": [\n        {\n            \"questionId\": \"question_id_1\",\n            \"answer\": \"A JavaScript runtime\"\n        },\n        {\n            \"questionId\": \"question_id_2\",\n            \"answer\": \"True\"\n        },\n        {\n            \"questionId\": \"question_id_3\",\n            \"answer\": \"npm init\"\n        }\n    ],\n    \"startedAt\": \"2025-10-17T12:00:00.000Z\",\n    \"timeTaken\": 25\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/student/quests/:questId/attempt",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "quests",
-                ":questId",
-                "attempt"
-              ],
-              "variable": [
-                {
-                  "key": "questId",
-                  "value": "{{quest_id}}"
-                }
-              ]
-            },
-            "description": "Submit quest answers (auto-graded, generates certificate if passed)"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Quest Attempts",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/student/quests/:questId/attempts",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "quests",
-                ":questId",
-                "attempts"
-              ],
-              "variable": [
-                {
-                  "key": "questId",
-                  "value": "{{quest_id}}"
-                }
-              ]
-            },
-            "description": "Get all attempts for a quest by the student"
-          },
-          "response": []
-        },
-        {
-          "name": "Get My Certificates",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/student/certificates",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "certificates"
-              ]
-            },
-            "description": "Get all certificates earned by the student"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Single Certificate",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/student/certificates/:certificateId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "certificates",
-                ":certificateId"
-              ],
-              "variable": [
-                {
-                  "key": "certificateId",
-                  "value": "{{certificate_id}}"
-                }
-              ]
-            },
-            "description": "Get certificate details (public endpoint for verification)"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Payment History",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/student/payments",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "payments"
-              ]
-            },
-            "description": "Get all payments made by the student"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Course Materials & Progress",
-          "request": {
-            "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/student/courses/{{course_id}}/materials",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "courses",
-                "{{course_id}}",
-                "materials"
-              ]
-            },
-            "description": "Get course materials hierarchy and student's completion progress"
-          },
-          "response": []
-        },
-        {
-          "name": "Mark Material as Completed",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"materialId\": \"{{material_id}}\",\n    \"subMaterialId\": \"{{sub_material_id}}\"\n}"
+              "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"questionId123\",\n      \"answer\": \"JavaScript\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{base_url}}/api/student/courses/{{course_id}}/materials/complete",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "student",
-                "courses",
-                "{{course_id}}",
-                "materials",
-                "complete"
-              ]
-            },
-            "description": "Mark a sub-material as completed. Progress will be automatically calculated."
+              "raw": "{{BASE_URL}}/api/student/quests/questId123/attempt",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "student", "quests", "questId123", "attempt"]
+            }
           },
           "response": []
         }
-      ],
-      "description": "Student learning and progress endpoints"
-    },
-    {
-      "name": "Forum",
-      "item": [
-        {
-          "name": "Create Question",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.environment.set(\"question_id\", jsonData.data._id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"title\": \"How to handle async operations in Node.js?\",\n    \"content\": \"I'm confused about callbacks, promises, and async/await. Can someone explain the differences and when to use each?\",\n    \"courseId\": \"{{course_id}}\",\n    \"tags\": [\"nodejs\", \"async\", \"promises\"]\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/forum",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "forum"
-              ]
-            },
-            "description": "Post a new question in the forum"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Course Questions",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/forum/course/:courseId?page=1&limit=20&resolved=false",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "forum",
-                "course",
-                ":courseId"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "resolved",
-                  "value": "false"
-                },
-                {
-                  "key": "search",
-                  "value": "async",
-                  "disabled": true
-                }
-              ],
-              "variable": [
-                {
-                  "key": "courseId",
-                  "value": "{{course_id}}"
-                }
-              ]
-            },
-            "description": "Get all questions for a course"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Single Question",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/forum/:questionId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "forum",
-                ":questionId"
-              ],
-              "variable": [
-                {
-                  "key": "questionId",
-                  "value": "{{question_id}}"
-                }
-              ]
-            },
-            "description": "Get question details with replies"
-          },
-          "response": []
-        },
-        {
-          "name": "Add Reply",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    var jsonData = pm.response.json();",
-                  "    var replies = jsonData.data.replies;",
-                  "    if (replies.length > 0) {",
-                  "        pm.environment.set(\"reply_id\", replies[replies.length - 1]._id);",
-                  "    }",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"content\": \"Great question! Here's the difference:\\n\\n1. Callbacks: Traditional way, can lead to callback hell\\n2. Promises: Better error handling and chaining\\n3. Async/await: Modern syntax, makes async code look synchronous\\n\\nI recommend using async/await for new projects.\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/forum/:questionId/reply",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "forum",
-                ":questionId",
-                "reply"
-              ],
-              "variable": [
-                {
-                  "key": "questionId",
-                  "value": "{{question_id}}"
-                }
-              ]
-            },
-            "description": "Add a reply to a question"
-          },
-          "response": []
-        },
-        {
-          "name": "Accept Reply as Answer",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/forum/:questionId/reply/:replyId/accept",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "forum",
-                ":questionId",
-                "reply",
-                ":replyId",
-                "accept"
-              ],
-              "variable": [
-                {
-                  "key": "questionId",
-                  "value": "{{question_id}}"
-                },
-                {
-                  "key": "replyId",
-                  "value": "{{reply_id}}"
-                }
-              ]
-            },
-            "description": "Accept a reply as the answer (question author only)"
-          },
-          "response": []
-        },
-        {
-          "name": "Vote on Question",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"voteType\": \"upvote\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/forum/:questionId/vote",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "forum",
-                ":questionId",
-                "vote"
-              ],
-              "variable": [
-                {
-                  "key": "questionId",
-                  "value": "{{question_id}}"
-                }
-              ]
-            },
-            "description": "Upvote or downvote a question"
-          },
-          "response": []
-        },
-        {
-          "name": "Vote on Reply",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"voteType\": \"upvote\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/forum/:questionId/reply/:replyId/vote",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "forum",
-                ":questionId",
-                "reply",
-                ":replyId",
-                "vote"
-              ],
-              "variable": [
-                {
-                  "key": "questionId",
-                  "value": "{{question_id}}"
-                },
-                {
-                  "key": "replyId",
-                  "value": "{{reply_id}}"
-                }
-              ]
-            },
-            "description": "Upvote or downvote a reply"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Question",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/forum/:questionId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "forum",
-                ":questionId"
-              ],
-              "variable": [
-                {
-                  "key": "questionId",
-                  "value": "{{question_id}}"
-                }
-              ]
-            },
-            "description": "Delete a question (author/admin only)"
-          },
-          "response": []
-        }
-      ],
-      "description": "Q&A Forum for course discussions"
-    },
-    {
-      "name": "Payments",
-      "item": [
-        {
-          "name": "Create Payment Intent",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.environment.set(\"payment_intent_id\", jsonData.data.paymentIntentId);",
-                  "    pm.environment.set(\"client_secret\", jsonData.data.clientSecret);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"courseId\": \"{{course_id}}\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/payments/create-intent",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "payments",
-                "create-intent"
-              ]
-            },
-            "description": "Create Stripe payment intent for course purchase"
-          },
-          "response": []
-        },
-        {
-          "name": "Confirm Payment",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"paymentIntentId\": \"{{payment_intent_id}}\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/payments/confirm",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "payments",
-                "confirm"
-              ]
-            },
-            "description": "Confirm payment and enroll in course"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Payment Details",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/payments/:paymentId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "payments",
-                ":paymentId"
-              ],
-              "variable": [
-                {
-                  "key": "paymentId",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Get payment details"
-          },
-          "response": []
-        },
-        {
-          "name": "Request Refund",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"reason\": \"Course not as expected\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/payments/:paymentId/refund",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "payments",
-                ":paymentId",
-                "refund"
-              ],
-              "variable": [
-                {
-                  "key": "paymentId",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Request payment refund"
-          },
-          "response": []
-        }
-      ],
-      "description": "Payment and transaction management"
-    },
-    {
-      "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/health",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "health"
-          ]
-        },
-        "description": "Check if the API is running"
-      },
-      "response": []
-    },
-    {
-      "name": "API Info",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            ""
-          ]
-        },
-        "description": "Get API information and available endpoints"
-      },
-      "response": []
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
+      ]
     }
   ],
   "variable": [
     {
-      "key": "base_url",
+      "key": "BASE_URL",
       "value": "http://localhost:5001",
       "type": "string"
     }

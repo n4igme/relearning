@@ -25,8 +25,8 @@ export default function DashboardLayout() {
         return [
           { name: 'Dashboard', path: '/mentor', icon: '📊' },
           { name: 'My Content', path: '/mentor/content', icon: '📝' },
+          { name: 'My Quests', path: '/mentor/my-quests', icon: '🎯' },
           { name: 'Create Course', path: '/mentor/create-course', icon: '➕' },
-          { name: 'Create Quest', path: '/mentor/create-quest', icon: '🎯' },
         ];
       case 'student':
         return [

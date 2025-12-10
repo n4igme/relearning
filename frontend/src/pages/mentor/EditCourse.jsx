@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import useAuthStore from '../../store/authStore';
 import { coursesAPI } from '../../utils/api';
 import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
@@ -11,6 +12,7 @@ import Button from '../../components/common/Button';
 export default function EditCourse() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -280,8 +282,14 @@ export default function EditCourse() {
       await coursesAPI.update(courseId, courseUpdateData);
       setSuccess('Course updated successfully!');
 
-      // Refresh course data
-      fetchCourse();
+      // Redirect based on user role after a short delay to show success message
+      setTimeout(() => {
+        if (user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/mentor/content');
+        }
+      }, 2000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update course. Please try again.');
       console.error('Error updating course:', err);
@@ -649,11 +657,37 @@ export default function EditCourse() {
             </div>
           </div>
 
+          {/* Quick Access to Content Management */}
+          <div className="mt-8 border-t pt-8">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Access</h3>
+            <div className="flex flex-wrap gap-4">
+              <a
+                href={`/mentor/content/${courseId}`}
+                className="btn btn-outline"
+              >
+                Manage Course Content
+              </a>
+              <a
+                href={`/mentor/create-quest?course=${courseId}`}
+                className="btn btn-success"
+              >
+                Create Quest for This Course
+              </a>
+            </div>
+          </div>
+
           <div className="mt-8 flex justify-between">
             <Button
               type="button"
               variant="secondary"
-              onClick={() => navigate('/mentor/content')}
+              onClick={() => {
+                // Redirect based on user role
+                if (user?.role === 'admin') {
+                  navigate('/admin');
+                } else {
+                  navigate('/mentor/content');
+                }
+              }}
             >
               Cancel
             </Button>

@@ -39,7 +39,7 @@ exports.getCourse = async (req, res, next) => {
   try {
     const course = await Course.findById(req.params.id)
       .populate('creator', 'name email')
-      .populate('mentors', 'name email')
+      .populate('mentors', '_id name email')
       .populate('materials')
       .populate('quests');
 
@@ -54,9 +54,9 @@ exports.getCourse = async (req, res, next) => {
     if (course.approvalStatus !== 'approved' || !course.isPublished) {
       // Only allow access if user is creator, mentor, or admin
       if (req.user) {
-        if (req.user.role !== 'admin' && 
+        if (req.user.role !== 'admin' &&
             course.creator.toString() !== req.user.id &&
-            !course.mentors.some(mentor => mentor.toString() === req.user.id)) {
+            !course.mentors.some(mentor => mentor._id.toString() === req.user.id)) {
           return res.status(404).json({
             success: false,
             message: 'Course not found'

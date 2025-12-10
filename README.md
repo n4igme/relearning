@@ -234,7 +234,7 @@ After deployment, the database is seeded with sample data:
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/courses` | Get all approved courses |
-| GET | `/api/courses/:id` | Get single course |
+| GET | `/api/courses/:id` | Get single course (Protected: requires authentication for unpublished courses) |
 | POST | `/api/courses` | Create course (Mentor/Admin) |
 | PUT | `/api/courses/:id` | Update course (Creator/Admin) |
 | DELETE | `/api/courses/:id` | Delete course (Creator/Admin) |
@@ -255,8 +255,9 @@ After deployment, the database is seeded with sample data:
 |--------|----------|-------------|
 | POST | `/api/quests` | Create quest (Mentor/Admin) |
 | GET | `/api/quests/course/:courseId` | Get course quests |
-| GET | `/api/quests/:id` | Get single quest |
+| GET | `/api/quests/:id` | Get single quest (Creator/Mentor/Admin or enrolled student if course is published) |
 | PUT | `/api/quests/:id` | Update quest (Creator/Admin) |
+| DELETE | `/api/quests/:id` | Delete quest (Creator/Admin) |
 | GET | `/api/quests/mentor/my-quests` | Get mentor's quests |
 
 ### Student
@@ -462,6 +463,36 @@ curl -X POST http://localhost:5001/api/courses \
       "currency": "USD"
     },
     "tags": ["nodejs", "javascript", "backend"]
+  }'
+```
+
+### Mentor Quest Management
+```bash
+# Get all your quests
+curl -X GET http://localhost:5001/api/quests/mentor/my-quests \
+  -H "Authorization: Bearer MENTOR_JWT_TOKEN"
+
+# Create a new quest
+curl -X POST http://localhost:5001/api/quests \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer MENTOR_JWT_TOKEN" \
+  -d '{
+    "title": "JavaScript Fundamentals Quiz",
+    "description": "Test your knowledge of JavaScript basics",
+    "course": "YOUR_COURSE_ID",
+    "passingScore": 70,
+    "timeLimit": 30,
+    "questions": [
+      {
+        "question": "What does JS stand for?",
+        "type": "multiple-choice",
+        "options": [
+          { "text": "Java Syntax", "isCorrect": false },
+          { "text": "JavaScript", "isCorrect": true }
+        ],
+        "points": 10
+      }
+    ]
   }'
 ```
 

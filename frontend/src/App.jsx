@@ -26,6 +26,7 @@ import CourseMaterials from './pages/student/CourseMaterials';
 
 // Mentor Pages
 import MyContent from './pages/mentor/MyContent';
+import MyQuests from './pages/mentor/MyQuests';
 import MentorDashboard from './pages/mentor/MentorDashboard';
 import CreateCourse from './pages/mentor/CreateCourse';
 import CreateQuest from './pages/mentor/CreateQuest';
@@ -157,6 +158,7 @@ function App() {
             <Route path="content" element={<MyContent />} />
             <Route path="content/:courseId" element={<CourseContent />} />
             <Route path="edit-course/:courseId" element={<EditCourse />} />
+            <Route path="my-quests" element={<MyQuests />} />
           </Route>
 
           {/* Admin Routes */}

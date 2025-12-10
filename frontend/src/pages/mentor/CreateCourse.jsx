@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../../store/authStore';
 import { coursesAPI } from '../../utils/api';
 import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
@@ -10,6 +11,7 @@ import Button from '../../components/common/Button';
 
 export default function CreateCourse() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -185,7 +187,12 @@ export default function CreateCourse() {
       await coursesAPI.create(courseData);
       setSuccess('Course created successfully!');
       setTimeout(() => {
-        navigate('/mentor');
+        // Redirect based on user role
+        if (user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/mentor');
+        }
       }, 2000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create course. Please try again.');
@@ -561,7 +568,14 @@ export default function CreateCourse() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => navigate('/mentor')}
+              onClick={() => {
+                // Redirect based on user role
+                if (user?.role === 'admin') {
+                  navigate('/admin');
+                } else {
+                  navigate('/mentor');
+                }
+              }}
             >
               Cancel
             </Button>
