@@ -119,6 +119,7 @@ export const enrollmentsAPI = {
 // Admin API
 export const adminAPI = {
   getStats: () => api.get('/admin/stats'),
+  getDashboardStats: () => api.get('/admin/dashboard/stats'),
   getPendingCourses: () => api.get('/admin/courses/pending'),
   approveCourse: (id) => api.put(`/admin/courses/${id}/approval/approve`),
   rejectCourse: (id, reason) =>

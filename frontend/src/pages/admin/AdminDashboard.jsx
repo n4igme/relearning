@@ -16,22 +16,25 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // For now, we'll use sample data until we have the actual API
-      const sampleData = {
+      const response = await adminAPI.getDashboardStats();
+
+      // Map the actual API response to the dashboard format
+      const actualData = {
         stats: {
-          totalUsers: 150,
-          totalCourses: 45,
-          totalQuests: 32,
-          totalEnrollments: 287,
+          totalUsers: response.data.data.totalUsers,
+          totalCourses: response.data.data.totalCourses,
+          totalQuests: response.data.data.totalQuests,
+          totalEnrollments: 0, // This field doesn't exist in the API, so defaulting to 0
         },
         pendingItems: {
-          pendingCourses: 12,
-          pendingQuests: 5,
-          pendingUsers: 3
-        }
+          pendingCourses: response.data.data.pendingCourses,
+          pendingQuests: response.data.data.pendingQuests,
+          pendingUsers: response.data.data.pendingUsers
+        },
+        recentActivities: response.data.data.recentActivities
       };
-      
-      setDashboardData(sampleData);
+
+      setDashboardData(actualData);
       setError('');
     } catch (err) {
       setError('Failed to load dashboard data. Please try again later.');
@@ -151,35 +154,27 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
         <div className="space-y-4">
-          <div className="flex items-start">
-            <div className="bg-gray-200 rounded-full h-8 w-8 flex items-center justify-center">
-              <span className="text-gray-700 font-medium">U</span>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">John Doe created a new course</p>
-              <p className="text-sm text-gray-500">2 minutes ago</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start">
-            <div className="bg-gray-200 rounded-full h-8 w-8 flex items-center justify-center">
-              <span className="text-gray-700 font-medium">S</span>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">Jane Smith enrolled in Advanced JavaScript</p>
-              <p className="text-sm text-gray-500">1 hour ago</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start">
-            <div className="bg-gray-200 rounded-full h-8 w-8 flex items-center justify-center">
-              <span className="text-gray-700 font-medium">M</span>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">Mike Johnson submitted a quest</p>
-              <p className="text-sm text-gray-500">3 hours ago</p>
-            </div>
-          </div>
+          {dashboardData && dashboardData.recentActivities && dashboardData.recentActivities.length > 0 ? (
+            dashboardData.recentActivities.map((activity, index) => (
+              <div key={index} className="flex items-start">
+                <div className="bg-gray-200 rounded-full h-8 w-8 flex items-center justify-center">
+                  <span className="text-gray-700 font-medium">
+                    {activity.user ? activity.user.name.charAt(0) :
+                     activity.course ? activity.course.title.charAt(0) :
+                     activity.quest ? activity.quest.title.charAt(0) : 'A'}
+                  </span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900">{activity.message}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(activity.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">No recent activities found</p>
+          )}
         </div>
       </div>
     </div>
