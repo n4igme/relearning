@@ -62,10 +62,12 @@ A comprehensive full-stack eLearning management system with React frontend, Node
 - **Rate Limiting**: express-rate-limit
 - **Validation**: express-validator
 
-### DevOps
-- **Containerization**: Docker + Docker Compose
-- **Web Server**: Nginx (for frontend)
-- **Proxy**: Vite dev server / Nginx reverse proxy
+### DevOps & Deployment
+- **Development**: Docker + Docker Compose
+- **Production Frontend**: Netlify (CDN + auto-deploy)
+- **Production Backend**: Render.com (Node.js hosting)
+- **Production Database**: MongoDB Atlas (managed database)
+- **Web Server**: Nginx (for frontend in Docker)
 
 ## 🚀 Quick Start with Docker
 
@@ -401,28 +403,72 @@ npm run dev
 
 ## 🚀 Production Deployment
 
+This application is ready to deploy to production with the following architecture:
+
+### Deployment Architecture
+```
+Frontend (Netlify) → Backend (Render) → Database (MongoDB Atlas)
+```
+
+### Quick Deployment Guide
+
+**Frontend to Netlify:**
+- ✅ Configuration: `netlify.toml` (already created)
+- ✅ Build command: `npm run build`
+- ✅ Publish directory: `frontend/dist`
+- 📝 Set environment variable: `VITE_API_URL`
+
+**Backend to Render:**
+- ✅ Configuration: `render.yaml` (already created)
+- ✅ Build command: `npm install`
+- ✅ Start command: `npm start`
+- 📝 Set 15+ environment variables (see DEPLOYMENT_GUIDE.md)
+
+**Database on MongoDB Atlas:**
+- 🆓 Free tier available (512MB)
+- ✅ Managed service (no maintenance)
+- 📝 Get connection string for backend
+
+### Step-by-Step Instructions
+
+**See complete deployment guide:** [`DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md)
+
+**Quick checklist:** [`DEPLOYMENT_CHECKLIST.md`](./DEPLOYMENT_CHECKLIST.md)
+
+### Deployment URLs
+- **Frontend:** https://dapper-cocada-70d414.netlify.app (or your custom domain)
+- **Backend:** https://your-app.onrender.com (created during deployment)
+- **Database:** MongoDB Atlas (managed)
+
+### Cost Estimate
+- **Free Tier:** $0/month (Netlify Free + Render Free + MongoDB Atlas M0)
+- **Production:** $7-16/month (Render Starter $7 + optional MongoDB M10 $9)
+
 ### Important Security Steps
 
 1. **Change default credentials**:
-   - MongoDB password
-   - JWT secrets (use `openssl rand -base64 64` for strength)
-   - Mongo Express credentials
+   - MongoDB password (strong random password)
+   - JWT secrets (use `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
+   - Never commit secrets to Git
 
 2. **Environment configuration**:
-   - Set `NODE_ENV=production`
-   - Use production MongoDB (MongoDB Atlas recommended)
+   - Set `NODE_ENV=production` on Render
+   - Use MongoDB Atlas for production database
    - Configure Stripe webhook endpoint
+   - Use environment variables for all secrets
 
 3. **Security hardening**:
-   - Disable Mongo Express in production
-   - Use HTTPS with reverse proxy (nginx/traefik)
-   - Configure firewall to only expose port 5001
-   - Set up SSL certificates (Let's Encrypt)
+   - ✅ CORS configured for production (already done)
+   - ✅ HTTPS enabled automatically (Netlify + Render)
+   - ✅ Rate limiting enabled (already configured)
+   - ✅ Security headers with Helmet.js (already configured)
+   - 📝 Use Stripe live keys (not test keys) for production
 
-4. **Monitoring**:
-   - Set up logging and monitoring
-   - Configure health checks
-   - Monitor resource usage
+4. **Monitoring & Maintenance**:
+   - Set up error monitoring (Sentry, LogRocket)
+   - Monitor Render logs regularly
+   - Check MongoDB Atlas metrics
+   - Set up uptime monitoring (UptimeRobot)
 
 ## 🔧 Usage Examples
 

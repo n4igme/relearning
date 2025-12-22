@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:courses.redteamleaders.com)",
+      "WebSearch",
+      "Bash(npm install sequelize pg pg-hstore)",
+      "Bash(dir /B *.js)",
+      "Bash(node src/test-db.js)",
+      "Bash(node src/debug-env.js)",
+      "Bash(dir:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
