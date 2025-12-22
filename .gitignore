@@ -1,14 +1,38 @@
+# Dependencies
 node_modules/
-.env
-.env.local
-.env.*.local
-uploads/
-*.log
-.DS_Store
-coverage/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
 dist/
 
-# Docker
-.docker/
-docker-compose.override.yml
-*.tar.gz
+# Misc
+.DS_Store
+*.pem
+*.log
+
+# Local env files
+.env
+.env*.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+
+# Old files
+uploads/
