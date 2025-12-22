@@ -83,7 +83,7 @@ export default async function LoginPage({
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-white dark:bg-gray-800 px-2 text-gray-500">
-                Or continue with
+                Students only
               </span>
             </div>
           </div>
@@ -115,6 +115,10 @@ export default async function LoginPage({
               Continue with Google
             </Button>
           </form>
+
+          <p className="mt-3 text-xs text-center text-gray-500">
+            Google sign-in is available for students only. Mentors and admins must use email/password.
+          </p>
 
           <div className="mt-6 text-center text-sm text-gray-600">
             Don't have an account?{' '}

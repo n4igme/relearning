@@ -159,9 +159,9 @@ npm run dev
 
 ---
 
-## Google OAuth Setup
+## Google OAuth Setup (Students Only)
 
-Enable Google Sign-In for faster user registration.
+Enable Google Sign-In for students. **Note:** Mentors and admins must use email/password authentication.
 
 ### Step 1: Create Google Cloud Project (10 minutes)
 
@@ -222,7 +222,11 @@ Since the app is in testing mode:
 3. Sign in with your Google account (must be in test users list!)
 4. You'll be redirected to the dashboard
 
-**Note**: New Google users will have `Pending Approval` status until an admin approves them.
+**Important Notes**:
+- Google OAuth is **only for students**
+- Mentors and admins cannot use Google sign-in
+- New Google users will have `Pending Approval` status until an admin approves them
+- If a mentor/admin tries to use Google, they'll see an error and be signed out
 
 ---
 
@@ -433,17 +437,54 @@ When users sign up, a profile is automatically created via database trigger.
 
 ## Deployment
 
-### Deploy to Vercel (Recommended)
+### Option 1: Docker (Local/Production)
+
+**Build and run with Docker:**
+
+```bash
+# Production build
+docker-compose up --build -d
+
+# Development build (with hot reload)
+docker-compose -f docker-compose.dev.yml up --build
+
+# View logs
+docker-compose logs -f
+
+# Stop containers
+docker-compose down
+```
+
+Your app will be available at: **http://localhost:3000**
+
+**Docker Features:**
+- ✅ Production-optimized build with multi-stage Dockerfile
+- ✅ Standalone Next.js output for faster cold starts
+- ✅ Development mode with hot reload
+- ✅ Minimal image size using Alpine Linux
+
+### Option 2: Deploy to Vercel (Recommended for Cloud)
 
 1. Push your code to GitHub
 2. Go to https://vercel.com
 3. Import your repository
-4. Add environment variables (same as `.env.local`)
+4. Add environment variables (same as `.env`)
 5. Deploy!
 
 **Update Google OAuth** after deployment:
 - Add production URL to Authorized JavaScript origins
 - Example: `https://your-app.vercel.app`
+
+### Option 3: Deploy to Netlify
+
+1. Push your code to GitHub
+2. Go to https://netlify.com
+3. Import your repository
+4. Build settings:
+   - **Build command**: `npm run build`
+   - **Publish directory**: `.next`
+5. Add environment variables
+6. Deploy!
 
 ---
 
@@ -451,13 +492,15 @@ When users sign up, a profile is automatically created via database trigger.
 
 ✅ **Completed**:
 - Next.js 15 + TypeScript setup
-- Supabase integration
+- Supabase integration (PostgreSQL)
 - Email/Password authentication
-- Google OAuth (SSO)
+- Google OAuth SSO (students only)
 - Role-based access control (Admin, Mentor, Student)
-- User management dashboard
+- User management dashboard with approval workflow
 - Protected routes & middleware
 - Database schema with RLS policies
+- Docker containerization (production & development)
+- Netlify/Vercel deployment ready
 
 🚧 **In Progress**:
 - Course creation interface
