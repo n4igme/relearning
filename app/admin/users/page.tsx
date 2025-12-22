@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import type { Database } from '@/types/database.types'
 
 async function approveUser(formData: FormData) {
   'use server'
@@ -11,9 +12,13 @@ async function approveUser(formData: FormData) {
   const supabase = await createClient()
   const userId = formData.get('userId') as string
 
+  const updateData: Database['public']['Tables']['profiles']['Update'] = {
+    is_approved: true
+  }
+
   await supabase
     .from('profiles')
-    .update({ is_approved: true })
+    .update(updateData)
     .eq('id', userId)
 
   redirect('/admin/users?success=User approved')
@@ -25,9 +30,13 @@ async function rejectUser(formData: FormData) {
   const supabase = await createClient()
   const userId = formData.get('userId') as string
 
+  const updateData: Database['public']['Tables']['profiles']['Update'] = {
+    is_approved: false
+  }
+
   await supabase
     .from('profiles')
-    .update({ is_approved: false })
+    .update(updateData)
     .eq('id', userId)
 
   redirect('/admin/users?success=User rejected')
@@ -40,9 +49,13 @@ async function toggleUserActive(formData: FormData) {
   const userId = formData.get('userId') as string
   const isActive = formData.get('isActive') === 'true'
 
+  const updateData: Database['public']['Tables']['profiles']['Update'] = {
+    is_active: !isActive
+  }
+
   await supabase
     .from('profiles')
-    .update({ is_active: !isActive })
+    .update(updateData)
     .eq('id', userId)
 
   redirect('/admin/users')

@@ -19,7 +19,9 @@
       "Bash(npm install:*)",
       "Bash(ls:*)",
       "Bash(findstr:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)"
     ],
     "deny": [],
     "ask": []
