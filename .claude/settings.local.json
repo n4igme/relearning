@@ -16,7 +16,9 @@
       "Bash(curl:*)",
       "Bash(npx shadcn@latest init -d)",
       "Bash(npx shadcn@latest add button input label card)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []
