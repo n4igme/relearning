@@ -110,12 +110,14 @@ export default async function DashboardPage() {
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle>Total Users</CardTitle>
-                  <CardDescription>Platform statistics</CardDescription>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>Manage user accounts</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold">-</p>
-                  <p className="text-sm text-gray-500 mt-2">Registered users</p>
+                  <p className="text-gray-500 mb-4">Approve or manage user accounts</p>
+                  <a href="/admin/users">
+                    <Button>Manage Users</Button>
+                  </a>
                 </CardContent>
               </Card>
 
