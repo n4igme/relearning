@@ -51,7 +51,7 @@ async function toggleUserActive(formData: FormData) {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { success?: string }
+  searchParams: Promise<{ success?: string }>
 }) {
   const profile = await getUserProfile()
 
@@ -72,6 +72,9 @@ export default async function AdminUsersPage({
   const approvedCount = users?.filter(u => u.is_approved).length || 0
   const totalCount = users?.length || 0
 
+  // Await searchParams
+  const params = await searchParams
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -84,9 +87,9 @@ export default async function AdminUsersPage({
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {searchParams?.success && (
+        {params?.success && (
           <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800">
-            ✅ {searchParams.success}
+            ✅ {params.success}
           </div>
         )}
 
