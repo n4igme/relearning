@@ -16,7 +16,7 @@ Complete guide to set up your Supabase database for the E-Learning Platform.
    - **Name**: `elearning-platform` (or your choice)
    - **Database Password**: Create a strong password
      - **IMPORTANT**: Save this password! You'll need it for direct database access
-     - Example: `MySecurePass123!@#`
+     - Example: `#MySecureP@ssw0rd;`
    - **Region**: Choose closest to your location
      - US East (Ohio) - `us-east-1`
      - Europe (Frankfurt) - `eu-central-1`
