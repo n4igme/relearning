@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function LoginPage({
   searchParams,
 }: {
-  searchParams: { message?: string }
+  searchParams: { message?: string; error?: string }
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
@@ -23,6 +23,12 @@ export default function LoginPage({
           {searchParams?.message && (
             <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
               {searchParams.message}
+            </div>
+          )}
+
+          {searchParams?.error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
+              <strong>Error:</strong> {searchParams.error}
             </div>
           )}
 
@@ -50,6 +56,12 @@ export default function LoginPage({
             </div>
 
             <div className="flex items-center justify-between text-sm">
+              <Link
+                href="/resend-verification"
+                className="text-blue-600 hover:underline"
+              >
+                Resend verification email
+              </Link>
               <Link
                 href="/forgot-password"
                 className="text-blue-600 hover:underline"
