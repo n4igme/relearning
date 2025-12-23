@@ -10,22 +10,21 @@ import type { Database } from '@/types/database.types'
 async function approveUser(formData: FormData) {
   'use server'
 
-  const supabase = await createClient()
   const adminClient = createAdminClient()
   const userId = formData.get('userId') as string
 
-  // Update profile approval status
-  const updateData: Database['public']['Tables']['profiles']['Update'] = {
-    is_approved: true
-  }
-
-  await supabase
+  // Update profile approval status using admin client to bypass RLS
+  const { error: updateError } = await adminClient
     .from('profiles')
-    .update(updateData)
+    .update({ is_approved: true })
     .eq('id', userId)
 
+  if (updateError) {
+    console.error('Error updating profile:', updateError)
+    redirect('/admin/users?error=' + encodeURIComponent('Failed to approve user: ' + updateError.message))
+  }
+
   // Confirm user's email in Supabase auth (allows them to login)
-  // This requires admin privileges via service role key
   const { error: authError } = await adminClient.auth.admin.updateUserById(
     userId,
     { email_confirm: true }
@@ -33,7 +32,7 @@ async function approveUser(formData: FormData) {
 
   if (authError) {
     console.error('Error confirming user email:', authError)
-    redirect('/admin/users?success=User approved but email confirmation failed. Check service role key.')
+    redirect('/admin/users?error=' + encodeURIComponent('User approved but email confirmation failed: ' + authError.message))
   }
 
   redirect('/admin/users?success=User approved and email verified! User can now login.')
@@ -42,17 +41,19 @@ async function approveUser(formData: FormData) {
 async function rejectUser(formData: FormData) {
   'use server'
 
-  const supabase = await createClient()
+  const adminClient = createAdminClient()
   const userId = formData.get('userId') as string
 
-  const updateData: Database['public']['Tables']['profiles']['Update'] = {
-    is_approved: false
-  }
-
-  await supabase
+  // Use admin client to bypass RLS
+  const { error } = await adminClient
     .from('profiles')
-    .update(updateData)
+    .update({ is_approved: false })
     .eq('id', userId)
+
+  if (error) {
+    console.error('Error rejecting user:', error)
+    redirect('/admin/users?error=' + encodeURIComponent('Failed to reject user: ' + error.message))
+  }
 
   redirect('/admin/users?success=User rejected')
 }
@@ -60,18 +61,20 @@ async function rejectUser(formData: FormData) {
 async function toggleUserActive(formData: FormData) {
   'use server'
 
-  const supabase = await createClient()
+  const adminClient = createAdminClient()
   const userId = formData.get('userId') as string
   const isActive = formData.get('isActive') === 'true'
 
-  const updateData: Database['public']['Tables']['profiles']['Update'] = {
-    is_active: !isActive
-  }
-
-  await supabase
+  // Use admin client to bypass RLS
+  const { error } = await adminClient
     .from('profiles')
-    .update(updateData)
+    .update({ is_active: !isActive })
     .eq('id', userId)
+
+  if (error) {
+    console.error('Error toggling user active status:', error)
+    redirect('/admin/users?error=' + encodeURIComponent('Failed to update user status: ' + error.message))
+  }
 
   redirect('/admin/users')
 }
@@ -79,7 +82,7 @@ async function toggleUserActive(formData: FormData) {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string }>
+  searchParams: Promise<{ success?: string; error?: string }>
 }) {
   const profile = await getUserProfile()
 
@@ -118,6 +121,12 @@ export default async function AdminUsersPage({
         {params?.success && (
           <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800">
             ✅ {params.success}
+          </div>
+        )}
+
+        {params?.error && (
+          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800">
+            ❌ {params.error}
           </div>
         )}
 
