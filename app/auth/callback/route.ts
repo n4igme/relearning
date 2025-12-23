@@ -7,11 +7,25 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get('code')
   const origin = requestUrl.origin
 
+  // Log for debugging
+  console.log('[Auth Callback] Origin:', origin)
+  console.log('[Auth Callback] Has code:', !!code)
+
   if (code) {
     const supabase = await createClient()
-    const { data: sessionData } = await supabase.auth.exchangeCodeForSession(code)
+    const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (sessionData.user) {
+    if (sessionError) {
+      console.error('[Auth Callback] Error exchanging code for session:', sessionError)
+      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Authentication failed: ' + sessionError.message)}`)
+    }
+
+    if (!sessionData?.user) {
+      console.error('[Auth Callback] No user data returned from session exchange')
+      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to authenticate. Please try again.')}`)
+    }
+
+    if (sessionData?.user) {
       // Check if user has a profile
       const { data: existingProfile } = await supabase
         .from('profiles')
