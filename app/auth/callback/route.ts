@@ -79,29 +79,32 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/login?error=Google sign-in is only available for students. Please use email and password to sign in.`)
       }
 
-      // Auto-approve students after email confirmation
-      if (isEmailProvider && existingProfile.role === 'student' && !existingProfile.is_approved) {
-        console.log('[Auth Callback] Attempting to auto-approve student...')
+      // Auto-approve students after email confirmation OR Google SSO
+      if (existingProfile.role === 'student' && !existingProfile.is_approved) {
+        // Students are auto-approved for both email confirmation and Google SSO
+        if (isEmailProvider || isGoogleOAuth) {
+          console.log('[Auth Callback] Attempting to auto-approve student...')
 
-        try {
-          // Use admin client to bypass RLS
-          const adminClient = createAdminClient()
-          const { error: approveError } = await adminClient
-            .from('profiles')
-            .update({ is_approved: true })
-            .eq('id', sessionData.user.id)
+          try {
+            // Use admin client to bypass RLS
+            const adminClient = createAdminClient()
+            const { error: approveError } = await adminClient
+              .from('profiles')
+              .update({ is_approved: true })
+              .eq('id', sessionData.user.id)
 
-          if (approveError) {
-            console.error('[Auth Callback] Error approving student:', approveError)
-            return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to auto-approve account: ' + approveError.message)}`)
-          } else {
-            console.log('[Auth Callback] Student auto-approved successfully!')
-            // Update the existingProfile object so the check below passes
-            existingProfile.is_approved = true
+            if (approveError) {
+              console.error('[Auth Callback] Error approving student:', approveError)
+              return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to auto-approve account: ' + approveError.message)}`)
+            } else {
+              console.log('[Auth Callback] Student auto-approved successfully!')
+              // Update the existingProfile object so the check below passes
+              existingProfile.is_approved = true
+            }
+          } catch (err) {
+            console.error('[Auth Callback] Exception during auto-approval:', err)
+            return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to auto-approve account. Please contact support.')}`)
           }
-        } catch (err) {
-          console.error('[Auth Callback] Exception during auto-approval:', err)
-          return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to auto-approve account. Please contact support.')}`)
         }
       }
 
