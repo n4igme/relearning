@@ -21,7 +21,8 @@
       "Bash(findstr:*)",
       "Bash(npm run build:*)",
       "Bash(docker:*)",
-      "Bash(docker-compose:*)"
+      "Bash(docker-compose:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

@@ -12,6 +12,13 @@ export type Difficulty = 'beginner' | 'intermediate' | 'advanced'
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer'
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded'
 
+// Cybersecurity platform types
+export type SkillCategory = 'web' | 'network' | 'cryptography' | 'social_engineering' | 'reverse_engineering' | 'forensics'
+export type ProficiencyLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert'
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum'
+export type BadgeRequirementType = 'quest_score' | 'course_completion' | 'skill_mastery' | 'consecutive_days' | 'total_points'
+export type SecurityToolCategory = 'scanner' | 'exploitation' | 'reconnaissance' | 'forensics' | 'cryptography' | 'wireless'
+
 export interface Database {
   public: {
     Tables: {
@@ -467,6 +474,225 @@ export interface Database {
           rating?: number
           comment?: string | null
           updated_at?: string
+        }
+      }
+      skills: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          category: SkillCategory
+          icon_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          category: SkillCategory
+          icon_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          category?: SkillCategory
+          icon_url?: string | null
+          updated_at?: string
+        }
+      }
+      student_skills: {
+        Row: {
+          id: string
+          student_id: string
+          skill_id: string
+          proficiency_level: ProficiencyLevel
+          points_earned: number
+          last_assessed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          skill_id: string
+          proficiency_level?: ProficiencyLevel
+          points_earned?: number
+          last_assessed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          skill_id?: string
+          proficiency_level?: ProficiencyLevel
+          points_earned?: number
+          last_assessed_at?: string | null
+          updated_at?: string
+        }
+      }
+      badges: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          icon_url: string | null
+          badge_tier: BadgeTier
+          requirement_type: BadgeRequirementType
+          requirement_criteria: Json
+          points_reward: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          icon_url?: string | null
+          badge_tier: BadgeTier
+          requirement_type: BadgeRequirementType
+          requirement_criteria: Json
+          points_reward?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          icon_url?: string | null
+          badge_tier?: BadgeTier
+          requirement_type?: BadgeRequirementType
+          requirement_criteria?: Json
+          points_reward?: number
+        }
+      }
+      student_badges: {
+        Row: {
+          id: string
+          student_id: string
+          badge_id: string
+          earned_at: string
+          evidence: Json | null
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          badge_id: string
+          earned_at?: string
+          evidence?: Json | null
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          badge_id?: string
+          earned_at?: string
+          evidence?: Json | null
+        }
+      }
+      leaderboard_stats: {
+        Row: {
+          id: string
+          student_id: string
+          total_points: number
+          badges_earned: number
+          courses_completed: number
+          quests_completed: number
+          average_score: number
+          current_streak_days: number
+          longest_streak_days: number
+          last_activity_date: string | null
+          rank: number | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          total_points?: number
+          badges_earned?: number
+          courses_completed?: number
+          quests_completed?: number
+          average_score?: number
+          current_streak_days?: number
+          longest_streak_days?: number
+          last_activity_date?: string | null
+          rank?: number | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          total_points?: number
+          badges_earned?: number
+          courses_completed?: number
+          quests_completed?: number
+          average_score?: number
+          current_streak_days?: number
+          longest_streak_days?: number
+          last_activity_date?: string | null
+          rank?: number | null
+          updated_at?: string
+        }
+      }
+      security_tools: {
+        Row: {
+          id: string
+          name: string
+          category: SecurityToolCategory
+          description: string | null
+          documentation_url: string | null
+          icon_url: string | null
+          difficulty_level: Difficulty
+          related_course_ids: string[] | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          category: SecurityToolCategory
+          description?: string | null
+          documentation_url?: string | null
+          icon_url?: string | null
+          difficulty_level: Difficulty
+          related_course_ids?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          category?: SecurityToolCategory
+          description?: string | null
+          documentation_url?: string | null
+          icon_url?: string | null
+          difficulty_level?: Difficulty
+          related_course_ids?: string[] | null
+          updated_at?: string
+        }
+      }
+      course_skills: {
+        Row: {
+          id: string
+          course_id: string
+          skill_id: string
+          proficiency_level_taught: ProficiencyLevel
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          course_id: string
+          skill_id: string
+          proficiency_level_taught: ProficiencyLevel
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          course_id?: string
+          skill_id?: string
+          proficiency_level_taught?: ProficiencyLevel
         }
       }
     }

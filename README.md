@@ -31,6 +31,16 @@ A modern, full-stack e-learning platform built with Next.js 15, TypeScript, Supa
 - Real-time enrollment and progress updates
 - Course reviews and ratings
 
+### Gamification System
+- **Points & Rewards**: Earn points for completing quests (100-275 pts), courses (200-800 pts), and maintaining streaks
+- **Badges**: 15 automated achievements across 4 tiers (Bronze, Silver, Gold, Platinum)
+- **Skills Tracking**: 25+ cybersecurity skills with proficiency levels (Beginner → Expert)
+- **Leaderboard**: Global rankings based on total points, badges, and achievements
+- **Learning Streaks**: Daily activity tracking with bonus rewards (7, 30, 100-day milestones)
+- **Skill Progression**: Automatic skill advancement based on quiz performance and course completion
+
+See [GAMIFICATION_GUIDE.md](./GAMIFICATION_GUIDE.md) for detailed integration guide.
+
 ## Project Structure
 
 ```
@@ -112,10 +122,10 @@ A modern, full-stack e-learning platform built with Next.js 15, TypeScript, Supa
 ```
 Success. No rows returned
 NOTICE: E-Learning Platform database schema created successfully!
-NOTICE: Tables created: 13
+NOTICE: Tables created: 20+
 ```
 
-**Verify**: Click **"Table Editor"** - you should see 13 tables (profiles, courses, materials, etc.)
+**Verify**: Click **"Table Editor"** - you should see 20+ tables (profiles, courses, materials, skills, badges, etc.)
 
 ### Step 3: Get API Credentials (2 minutes)
 
@@ -146,7 +156,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 npm run dev
 ```
 
-### Step 6: Create First Admin User
+### Step 6: Seed Gamification Data (Optional but Recommended)
+
+To enable the full gamification experience, run these seed files in Supabase SQL Editor:
+
+1. **Seed Skills** (`database/seed-skills.sql`) - Adds 25+ cybersecurity skills
+2. **Seed Badges** (`database/seed-badges.sql`) - Adds 15 achievement badges
+3. **Seed Tools** (`database/seed-tools.sql`) - Adds cybersecurity tools database
+4. **Seed Test Data** (`database/seed-gamification-test.sql`) - Adds sample courses and quests for testing
+
+**Note**: Run each file separately in the SQL Editor.
+
+### Step 7: Create First Admin User
 
 1. Register a new account at http://localhost:3000/register
 2. In Supabase SQL Editor, run:
@@ -315,6 +336,37 @@ npm run dev
 **reviews** - Course reviews/ratings
 - 1-5 star rating
 - Written feedback
+
+### Gamification Tables
+
+**skills** - Cybersecurity skill definitions
+- 25+ skills across 6 categories
+- Web Security, Network Security, Cryptography, etc.
+
+**student_skills** - Student skill progression
+- Tracks proficiency levels (beginner → expert)
+- Points earned per skill
+
+**badges** - Achievement badges
+- 15 badges across 4 tiers
+- Auto-awarded based on milestones
+
+**student_badges** - Earned badges
+- Timestamp of achievement
+- Badge progress tracking
+
+**leaderboard_stats** - Student rankings
+- Total points, badges, courses completed
+- Learning streaks and averages
+- Global rank
+
+**point_history** - Points transaction log
+- Tracks all point awards
+- Source tracking (quest, course, skill, streak)
+
+**course_skills** - Links courses to skills
+- Defines which skills a course teaches
+- Proficiency level taught
 
 ---
 
@@ -502,13 +554,19 @@ Your app will be available at: **http://localhost:3000**
 - Docker containerization (production & development)
 - Netlify/Vercel deployment ready
 
+✅ **Gamification Features**:
+- Points and rewards system
+- 15 automated badges (Bronze, Silver, Gold, Platinum tiers)
+- 25+ cybersecurity skills tracking
+- Global leaderboard with rankings
+- Learning streaks (7, 30, 100-day milestones)
+- Skill progression (Beginner → Expert)
+
 🚧 **In Progress**:
-- Course creation interface
-- Video upload with Cloudinary
-- Progress tracking
-- Assessment system
-- Certificate generation
-- Stripe payment integration
+- Course creation interface (UI)
+- Video upload with Cloudinary (UI)
+- Stripe payment integration (UI)
+- Advanced analytics dashboard
 
 ---
 

@@ -2,6 +2,9 @@ import { getUserProfile, signOut } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { redirect } from 'next/navigation'
+import { SkillProgress } from '@/components/skill-progress'
+import { Leaderboard } from '@/components/leaderboard'
+import { BadgesShowcase } from '@/components/badges-showcase'
 
 export default async function DashboardPage() {
   const profile = await getUserProfile()
@@ -14,7 +17,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">E-Learning Platform</h1>
+          <h1 className="text-2xl font-bold">🛡️ CyberSec Academy</h1>
           <form action={signOut}>
             <Button variant="outline">Sign Out</Button>
           </form>
@@ -57,26 +60,20 @@ export default async function DashboardPage() {
 
           {profile.role === 'student' && (
             <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>My Courses</CardTitle>
-                  <CardDescription>Enrolled courses</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-500">No courses enrolled yet</p>
-                  <Button className="mt-4" variant="outline">Browse Courses</Button>
-                </CardContent>
-              </Card>
+              {/* Leaderboard - Full width */}
+              <div className="md:col-span-2 lg:col-span-3">
+                <Leaderboard studentId={profile.id} limit={10} />
+              </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>My Progress</CardTitle>
-                  <CardDescription>Learning statistics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-500">Start learning to see your progress</p>
-                </CardContent>
-              </Card>
+              {/* Skill Progress - Full width */}
+              <div className="md:col-span-2 lg:col-span-3">
+                <SkillProgress studentId={profile.id} />
+              </div>
+
+              {/* Badges Showcase - Full width */}
+              <div className="md:col-span-2 lg:col-span-3">
+                <BadgesShowcase studentId={profile.id} />
+              </div>
             </>
           )}
 

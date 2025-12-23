@@ -407,6 +407,254 @@ CREATE POLICY "Certificates are viewable by owner and public for verification"
 -- You can add seed data here if needed
 
 -- =====================================================
+-- CYBERSECURITY PLATFORM EXTENSIONS
+-- =====================================================
+
+-- Skills table (cybersecurity competencies)
+CREATE TABLE public.skills (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    category TEXT NOT NULL CHECK (category IN ('web', 'network', 'cryptography', 'social_engineering', 'reverse_engineering', 'forensics')),
+    icon_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_skills_category ON public.skills(category);
+
+-- Student skills tracking
+CREATE TABLE public.student_skills (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    skill_id UUID REFERENCES public.skills(id) ON DELETE CASCADE,
+    proficiency_level TEXT NOT NULL DEFAULT 'beginner' CHECK (proficiency_level IN ('beginner', 'intermediate', 'advanced', 'expert')),
+    points_earned INTEGER DEFAULT 0,
+    last_assessed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(student_id, skill_id)
+);
+
+CREATE INDEX idx_student_skills_student ON public.student_skills(student_id);
+CREATE INDEX idx_student_skills_skill ON public.student_skills(skill_id);
+CREATE INDEX idx_student_skills_proficiency ON public.student_skills(proficiency_level);
+
+-- Badges/Achievements
+CREATE TABLE public.badges (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    icon_url TEXT,
+    badge_tier TEXT NOT NULL CHECK (badge_tier IN ('bronze', 'silver', 'gold', 'platinum')),
+    requirement_type TEXT NOT NULL CHECK (requirement_type IN ('quest_score', 'course_completion', 'skill_mastery', 'consecutive_days', 'total_points')),
+    requirement_criteria JSONB NOT NULL, -- Flexible criteria (e.g., {"min_score": 95, "quest_count": 10})
+    points_reward INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_badges_tier ON public.badges(badge_tier);
+CREATE INDEX idx_badges_type ON public.badges(requirement_type);
+
+-- Student badge achievements
+CREATE TABLE public.student_badges (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    badge_id UUID REFERENCES public.badges(id) ON DELETE CASCADE,
+    earned_at TIMESTAMPTZ DEFAULT NOW(),
+    evidence JSONB, -- Evidence data (quest_id, score, etc.)
+    UNIQUE(student_id, badge_id)
+);
+
+CREATE INDEX idx_student_badges_student ON public.student_badges(student_id);
+CREATE INDEX idx_student_badges_badge ON public.student_badges(badge_id);
+CREATE INDEX idx_student_badges_earned ON public.student_badges(earned_at DESC);
+
+-- Leaderboard statistics (denormalized for performance)
+CREATE TABLE public.leaderboard_stats (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_id UUID UNIQUE REFERENCES public.profiles(id) ON DELETE CASCADE,
+    total_points INTEGER DEFAULT 0,
+    badges_earned INTEGER DEFAULT 0,
+    courses_completed INTEGER DEFAULT 0,
+    quests_completed INTEGER DEFAULT 0,
+    average_score DECIMAL(5,2) DEFAULT 0,
+    current_streak_days INTEGER DEFAULT 0,
+    longest_streak_days INTEGER DEFAULT 0,
+    last_activity_date DATE,
+    rank INTEGER, -- Cached rank, updated periodically
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_leaderboard_points ON public.leaderboard_stats(total_points DESC);
+CREATE INDEX idx_leaderboard_rank ON public.leaderboard_stats(rank);
+CREATE INDEX idx_leaderboard_student ON public.leaderboard_stats(student_id);
+
+-- Security Tools Catalog
+CREATE TABLE public.security_tools (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL UNIQUE,
+    category TEXT NOT NULL CHECK (category IN ('scanner', 'exploitation', 'reconnaissance', 'forensics', 'cryptography', 'wireless')),
+    description TEXT,
+    documentation_url TEXT,
+    icon_url TEXT,
+    difficulty_level TEXT NOT NULL CHECK (difficulty_level IN ('beginner', 'intermediate', 'advanced')),
+    related_course_ids UUID[], -- Array of course IDs
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_security_tools_category ON public.security_tools(category);
+CREATE INDEX idx_security_tools_difficulty ON public.security_tools(difficulty_level);
+
+-- Course-Skills junction table (many-to-many)
+CREATE TABLE public.course_skills (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+    skill_id UUID REFERENCES public.skills(id) ON DELETE CASCADE,
+    proficiency_level_taught TEXT NOT NULL CHECK (proficiency_level_taught IN ('beginner', 'intermediate', 'advanced', 'expert')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(course_id, skill_id)
+);
+
+CREATE INDEX idx_course_skills_course ON public.course_skills(course_id);
+CREATE INDEX idx_course_skills_skill ON public.course_skills(skill_id);
+
+-- =====================================================
+-- RLS POLICIES FOR CYBERSECURITY TABLES
+-- =====================================================
+
+-- Skills (public read, admin write)
+ALTER TABLE public.skills ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Skills are viewable by everyone"
+    ON public.skills FOR SELECT
+    USING (true);
+
+CREATE POLICY "Only admins can manage skills"
+    ON public.skills FOR ALL
+    USING (EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ));
+
+-- Student Skills (students view own, admins view all)
+ALTER TABLE public.student_skills ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Students can view own skills"
+    ON public.student_skills FOR SELECT
+    USING (student_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role IN ('admin', 'mentor')
+    ));
+
+CREATE POLICY "Students can update own skills"
+    ON public.student_skills FOR INSERT
+    WITH CHECK (student_id = auth.uid());
+
+CREATE POLICY "System can update student skills"
+    ON public.student_skills FOR UPDATE
+    USING (student_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ));
+
+-- Badges (public read, admin write)
+ALTER TABLE public.badges ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Badges are viewable by everyone"
+    ON public.badges FOR SELECT
+    USING (true);
+
+CREATE POLICY "Only admins can manage badges"
+    ON public.badges FOR ALL
+    USING (EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ));
+
+-- Student Badges (students view own, admins view all)
+ALTER TABLE public.student_badges ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Students can view own badges"
+    ON public.student_badges FOR SELECT
+    USING (student_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role IN ('admin', 'mentor')
+    ));
+
+CREATE POLICY "System can award badges"
+    ON public.student_badges FOR INSERT
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ));
+
+-- Leaderboard Stats (public read)
+ALTER TABLE public.leaderboard_stats ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Leaderboard is viewable by authenticated users"
+    ON public.leaderboard_stats FOR SELECT
+    USING (auth.role() = 'authenticated');
+
+CREATE POLICY "System can update leaderboard"
+    ON public.leaderboard_stats FOR ALL
+    USING (EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ));
+
+-- Security Tools (public read, admin write)
+ALTER TABLE public.security_tools ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Security tools are viewable by everyone"
+    ON public.security_tools FOR SELECT
+    USING (true);
+
+CREATE POLICY "Only admins can manage tools"
+    ON public.security_tools FOR ALL
+    USING (EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ));
+
+-- Course Skills (public read, instructors/admins write)
+ALTER TABLE public.course_skills ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Course skills are viewable by everyone"
+    ON public.course_skills FOR SELECT
+    USING (true);
+
+CREATE POLICY "Instructors can manage own course skills"
+    ON public.course_skills FOR ALL
+    USING (EXISTS (
+        SELECT 1 FROM public.courses c
+        JOIN public.profiles p ON c.instructor_id = p.id
+        WHERE c.id = course_id AND p.id = auth.uid() AND p.role IN ('mentor', 'admin')
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.courses c
+        JOIN public.profiles p ON c.instructor_id = p.id
+        WHERE c.id = course_id AND p.id = auth.uid() AND p.role IN ('mentor', 'admin')
+    ));
+
+-- =====================================================
 -- COMPLETED
 -- =====================================================
 
@@ -419,8 +667,9 @@ GRANT ALL ON ALL ROUTINES IN SCHEMA public TO authenticated;
 -- Success message
 DO $$
 BEGIN
-    RAISE NOTICE 'E-Learning Platform database schema created successfully!';
-    RAISE NOTICE 'Tables created: 13';
-    RAISE NOTICE 'Indexes created: 25+';
-    RAISE NOTICE 'RLS policies: Enabled';
+    RAISE NOTICE 'Cybersecurity E-Learning Platform database schema created successfully!';
+    RAISE NOTICE 'Tables created: 20 (13 base + 7 cybersecurity extensions)';
+    RAISE NOTICE 'Indexes created: 40+';
+    RAISE NOTICE 'RLS policies: Enabled on all tables';
+    RAISE NOTICE 'New features: Skills tracking, Badges, Leaderboard, Security tools';
 END $$;

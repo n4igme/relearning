@@ -1,5 +1,6 @@
 import { getUserProfile } from '@/lib/actions/auth'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,8 +11,10 @@ async function approveUser(formData: FormData) {
   'use server'
 
   const supabase = await createClient()
+  const adminClient = createAdminClient()
   const userId = formData.get('userId') as string
 
+  // Update profile approval status
   const updateData: Database['public']['Tables']['profiles']['Update'] = {
     is_approved: true
   }
@@ -21,7 +24,19 @@ async function approveUser(formData: FormData) {
     .update(updateData)
     .eq('id', userId)
 
-  redirect('/admin/users?success=User approved')
+  // Confirm user's email in Supabase auth (allows them to login)
+  // This requires admin privileges via service role key
+  const { error: authError } = await adminClient.auth.admin.updateUserById(
+    userId,
+    { email_confirm: true }
+  )
+
+  if (authError) {
+    console.error('Error confirming user email:', authError)
+    redirect('/admin/users?success=User approved but email confirmation failed. Check service role key.')
+  }
+
+  redirect('/admin/users?success=User approved and email verified! User can now login.')
 }
 
 async function rejectUser(formData: FormData) {
