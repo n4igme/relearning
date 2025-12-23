@@ -22,7 +22,8 @@
       "Bash(npm run build:*)",
       "Bash(docker:*)",
       "Bash(docker-compose:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git push)"
     ],
     "deny": [],
     "ask": []
