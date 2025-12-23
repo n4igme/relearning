@@ -6,7 +6,13 @@
   package = "@netlify/plugin-nextjs"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
+
+# Configure secrets scanning
+[build.secrets_scanning]
+  enabled = true
+  # Ignore .env.example since it's meant to have placeholder values
+  omit_paths = [".env.example"]
 
 # Redirect all requests to Next.js
 [[redirects]]
