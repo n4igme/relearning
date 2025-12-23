@@ -35,7 +35,13 @@ export async function GET(request: Request) {
           is_active: true,
         }
 
-        await supabase.from('profiles').insert(profileData)
+        const { error: insertError } = await supabase.from('profiles').insert(profileData)
+
+        if (insertError) {
+          console.error('Error creating profile:', insertError)
+          await supabase.auth.signOut()
+          return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to create profile: ' + insertError.message)}`)
+        }
 
         // Redirect to pending approval page
         return NextResponse.redirect(`${origin}/login?message=Your account has been created and is pending approval. An admin will review your account shortly.`)
