@@ -57,8 +57,8 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/login?error=Google sign-in is only available for students. Please use email and password to sign in.`)
       }
 
-      // Check if user is approved (only for students, mentors/admins are auto-approved)
-      if (existingProfile.role === 'student' && !existingProfile.is_approved) {
+      // Check if user is approved (mentors need admin approval, students are auto-approved)
+      if (existingProfile.role === 'mentor' && !existingProfile.is_approved) {
         return NextResponse.redirect(`${origin}/login?error=Your account is pending approval. Please wait for an admin to approve your account.`)
       }
 

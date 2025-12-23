@@ -1,5 +1,5 @@
--- Migration: Auto-approve mentors and admins, only students need approval
--- This updates the handle_new_user function to automatically approve non-student roles
+-- Migration: Auto-approve students and admins, mentors need approval
+-- This updates the handle_new_user function to automatically approve students
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -14,14 +14,19 @@ BEGIN
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', 'New User'),
         user_role,
-        -- Auto-approve mentors and admins, students need approval
-        CASE WHEN user_role IN ('mentor', 'admin') THEN true ELSE false END
+        -- Auto-approve students and admins, mentors need approval
+        CASE WHEN user_role IN ('student', 'admin') THEN true ELSE false END
     );
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Also update any existing mentors/admins to be approved
+-- Update any existing students to be approved
 UPDATE public.profiles
 SET is_approved = true
-WHERE role IN ('mentor', 'admin') AND is_approved = false;
+WHERE role = 'student' AND is_approved = false;
+
+-- Ensure existing admins are approved
+UPDATE public.profiles
+SET is_approved = true
+WHERE role = 'admin' AND is_approved = false;
