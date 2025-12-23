@@ -81,6 +81,41 @@ export default async function DashboardPage() {
 
           {profile.role === 'student' && (
             <>
+              {/* Quick Links Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Links</CardTitle>
+                  <CardDescription>Access your learning resources</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Link href="/courses" className="block">
+                    <Button variant="outline" className="w-full justify-start">
+                      📚 Browse Courses
+                    </Button>
+                  </Link>
+                  <Link href="/gamification" className="block">
+                    <Button variant="outline" className="w-full justify-start">
+                      🎮 My Progress
+                    </Button>
+                  </Link>
+                  <Link href="/leaderboard" className="block">
+                    <Button variant="outline" className="w-full justify-start">
+                      🏆 Leaderboard
+                    </Button>
+                  </Link>
+                  <Link href="/skills" className="block">
+                    <Button variant="outline" className="w-full justify-start">
+                      🎯 My Skills
+                    </Button>
+                  </Link>
+                  <Link href="/certificates" className="block">
+                    <Button variant="outline" className="w-full justify-start">
+                      📜 Certificates
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
               {/* Enrolled Courses - Full width */}
               <div className="md:col-span-2 lg:col-span-3">
                 <Card>
