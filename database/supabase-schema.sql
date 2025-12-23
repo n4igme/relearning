@@ -302,13 +302,19 @@ CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON public.reviews
 -- Function to auto-create profile on user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    user_role TEXT;
 BEGIN
-    INSERT INTO public.profiles (id, email, full_name, role)
+    user_role := COALESCE(NEW.raw_user_meta_data->>'role', 'student');
+
+    INSERT INTO public.profiles (id, email, full_name, role, is_approved)
     VALUES (
         NEW.id,
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', 'New User'),
-        COALESCE(NEW.raw_user_meta_data->>'role', 'student')
+        user_role,
+        -- Auto-approve mentors and admins, students need approval
+        CASE WHEN user_role IN ('mentor', 'admin') THEN true ELSE false END
     );
     RETURN NEW;
 END;

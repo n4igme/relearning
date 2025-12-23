@@ -47,14 +47,18 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/login?message=Your account has been created and is pending approval. An admin will review your account shortly.`)
       }
 
+      // Check if this is a Google OAuth login (not email confirmation)
+      const isGoogleOAuth = sessionData.user.app_metadata.provider === 'google'
+
       // If profile exists but is not a student, deny Google SSO access
-      if (existingProfile.role !== 'student') {
+      // This restriction only applies to Google OAuth, not email signups
+      if (isGoogleOAuth && existingProfile.role !== 'student') {
         await supabase.auth.signOut()
         return NextResponse.redirect(`${origin}/login?error=Google sign-in is only available for students. Please use email and password to sign in.`)
       }
 
-      // Check if user is approved
-      if (!existingProfile.is_approved) {
+      // Check if user is approved (only for students, mentors/admins are auto-approved)
+      if (existingProfile.role === 'student' && !existingProfile.is_approved) {
         return NextResponse.redirect(`${origin}/login?error=Your account is pending approval. Please wait for an admin to approve your account.`)
       }
 
