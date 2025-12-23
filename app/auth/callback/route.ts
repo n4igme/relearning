@@ -63,8 +63,14 @@ export async function GET(request: Request) {
       }
 
       // Check if this is a Google OAuth login (not email confirmation)
-      const isGoogleOAuth = sessionData.user.app_metadata.provider === 'google'
-      const isEmailProvider = sessionData.user.app_metadata.provider === 'email'
+      const provider = sessionData.user.app_metadata.provider
+      const isGoogleOAuth = provider === 'google'
+      const isEmailProvider = provider === 'email'
+
+      console.log('[Auth Callback] Provider:', provider)
+      console.log('[Auth Callback] User role:', existingProfile.role)
+      console.log('[Auth Callback] Is approved:', existingProfile.is_approved)
+      console.log('[Auth Callback] Is email provider:', isEmailProvider)
 
       // If profile exists but is not a student, deny Google SSO access
       // This restriction only applies to Google OAuth, not email signups
@@ -75,19 +81,27 @@ export async function GET(request: Request) {
 
       // Auto-approve students after email confirmation
       if (isEmailProvider && existingProfile.role === 'student' && !existingProfile.is_approved) {
-        // Use admin client to bypass RLS
-        const adminClient = createAdminClient()
-        const { error: approveError } = await adminClient
-          .from('profiles')
-          .update({ is_approved: true })
-          .eq('id', sessionData.user.id)
+        console.log('[Auth Callback] Attempting to auto-approve student...')
 
-        if (approveError) {
-          console.error('[Auth Callback] Error approving student:', approveError)
-        } else {
-          console.log('[Auth Callback] Student auto-approved after email confirmation')
-          // Update the existingProfile object so the check below passes
-          existingProfile.is_approved = true
+        try {
+          // Use admin client to bypass RLS
+          const adminClient = createAdminClient()
+          const { error: approveError } = await adminClient
+            .from('profiles')
+            .update({ is_approved: true })
+            .eq('id', sessionData.user.id)
+
+          if (approveError) {
+            console.error('[Auth Callback] Error approving student:', approveError)
+            return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to auto-approve account: ' + approveError.message)}`)
+          } else {
+            console.log('[Auth Callback] Student auto-approved successfully!')
+            // Update the existingProfile object so the check below passes
+            existingProfile.is_approved = true
+          }
+        } catch (err) {
+          console.error('[Auth Callback] Exception during auto-approval:', err)
+          return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to auto-approve account. Please contact support.')}`)
         }
       }
 
