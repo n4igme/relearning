@@ -313,8 +313,10 @@ BEGIN
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', 'New User'),
         user_role,
-        -- Auto-approve students and admins, mentors need approval
-        CASE WHEN user_role IN ('student', 'admin') THEN true ELSE false END
+        -- Auto-approve only admins, students/mentors start as unapproved
+        -- Students will be approved after email confirmation
+        -- Mentors need admin approval
+        CASE WHEN user_role = 'admin' THEN true ELSE false END
     );
     RETURN NEW;
 END;

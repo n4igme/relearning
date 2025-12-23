@@ -1,7 +1,10 @@
--- Migration: Apply student auto-approval logic
--- Run this in Supabase SQL Editor to fix the trigger and approve existing students
+-- Migration: Update approval logic - students approved after email confirmation
+-- Run this in Supabase SQL Editor
 
--- Step 1: Update the trigger function to auto-approve students
+-- Step 1: Update the trigger function
+-- Students start unapproved and are approved after email confirmation
+-- Mentors start unapproved and need admin approval
+-- Admins are auto-approved
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -15,22 +18,25 @@ BEGIN
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', 'New User'),
         user_role,
-        -- Auto-approve students and admins, mentors need approval
-        CASE WHEN user_role IN ('student', 'admin') THEN true ELSE false END
+        -- Auto-approve only admins, students/mentors start as unapproved
+        -- Students will be approved after email confirmation (handled in auth callback)
+        -- Mentors need admin approval
+        CASE WHEN user_role = 'admin' THEN true ELSE false END
     );
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Step 2: Update ALL existing students to be approved
-UPDATE public.profiles
-SET is_approved = true
-WHERE role = 'student';
-
--- Step 3: Ensure admins are also approved
+-- Step 2: Ensure admins are approved
 UPDATE public.profiles
 SET is_approved = true
 WHERE role = 'admin';
+
+-- Step 3: Reset unapproved students who haven't confirmed email
+-- This is optional - only run if you want to reset approval status
+-- UPDATE public.profiles
+-- SET is_approved = false
+-- WHERE role = 'student';
 
 -- Step 4: Verify the changes
 SELECT
