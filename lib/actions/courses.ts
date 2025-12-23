@@ -456,3 +456,316 @@ export async function getCourseById(courseId: string) {
     return { success: false, error }
   }
 }
+
+/**
+ * Get mentor's courses
+ */
+export async function getMentorCourses(instructorId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .select(`
+        *,
+        materials (id),
+        enrollments (id)
+      `)
+      .eq('instructor_id', instructorId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    // Add counts
+    const coursesWithCounts = data?.map((course: any) => ({
+      ...course,
+      material_count: course.materials?.length || 0,
+      enrollment_count: course.enrollments?.length || 0,
+    }))
+
+    return { success: true, data: coursesWithCounts }
+  } catch (error) {
+    console.error('Error fetching mentor courses:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Create a new course (mentor only)
+ */
+export async function createCourse(instructorId: string, courseData: {
+  title: string
+  description?: string
+  thumbnail_url?: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+  category?: string
+  price: number
+  learning_objectives?: string[]
+  prerequisites?: string[]
+}) {
+  const supabase = await createClient()
+
+  try {
+    const newCourse: Database['public']['Tables']['courses']['Insert'] = {
+      instructor_id: instructorId,
+      title: courseData.title,
+      description: courseData.description,
+      thumbnail_url: courseData.thumbnail_url,
+      difficulty: courseData.difficulty,
+      category: courseData.category,
+      price: courseData.price,
+      learning_objectives: courseData.learning_objectives,
+      prerequisites: courseData.prerequisites,
+      is_published: false,
+      is_approved: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    const { data, error } = await supabase
+      .from('courses')
+      .insert(newCourse)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error creating course:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Update course
+ */
+export async function updateCourse(courseId: string, courseData: Partial<{
+  title: string
+  description: string
+  thumbnail_url: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+  category: string
+  price: number
+  learning_objectives: string[]
+  prerequisites: string[]
+  is_published: boolean
+}>) {
+  const supabase = await createClient()
+
+  try {
+    const updateData: Database['public']['Tables']['courses']['Update'] = {
+      ...courseData,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { data, error } = await supabase
+      .from('courses')
+      .update(updateData)
+      .eq('id', courseId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error updating course:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Delete course
+ */
+export async function deleteCourse(courseId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('courses')
+      .delete()
+      .eq('id', courseId)
+
+    if (error) throw error
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting course:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Create material (chapter)
+ */
+export async function createMaterial(courseId: string, materialData: {
+  title: string
+  description?: string
+  order_index: number
+}) {
+  const supabase = await createClient()
+
+  try {
+    const newMaterial: Database['public']['Tables']['materials']['Insert'] = {
+      course_id: courseId,
+      title: materialData.title,
+      description: materialData.description,
+      order_index: materialData.order_index,
+    }
+
+    const { data, error } = await supabase
+      .from('materials')
+      .insert(newMaterial)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error creating material:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Update material
+ */
+export async function updateMaterial(materialId: string, materialData: Partial<{
+  title: string
+  description: string
+  order_index: number
+}>) {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('materials')
+      .update(materialData)
+      .eq('id', materialId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error updating material:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Delete material
+ */
+export async function deleteMaterial(materialId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('materials')
+      .delete()
+      .eq('id', materialId)
+
+    if (error) throw error
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting material:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Create sub-material (lesson)
+ */
+export async function createSubMaterial(materialId: string, subMaterialData: {
+  title: string
+  description?: string
+  content_type: 'video' | 'document' | 'text'
+  content_url?: string
+  cloudinary_public_id?: string
+  video_duration?: number
+  order_index: number
+}) {
+  const supabase = await createClient()
+
+  try {
+    const newSubMaterial: Database['public']['Tables']['sub_materials']['Insert'] = {
+      material_id: materialId,
+      title: subMaterialData.title,
+      description: subMaterialData.description,
+      content_type: subMaterialData.content_type,
+      content_url: subMaterialData.content_url,
+      cloudinary_public_id: subMaterialData.cloudinary_public_id,
+      video_duration: subMaterialData.video_duration,
+      order_index: subMaterialData.order_index,
+    }
+
+    const { data, error } = await supabase
+      .from('sub_materials')
+      .insert(newSubMaterial)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error creating sub-material:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Update sub-material
+ */
+export async function updateSubMaterial(subMaterialId: string, subMaterialData: Partial<{
+  title: string
+  description: string
+  content_type: 'video' | 'document' | 'text'
+  content_url: string
+  cloudinary_public_id: string
+  video_duration: number
+  order_index: number
+}>) {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('sub_materials')
+      .update(subMaterialData)
+      .eq('id', subMaterialId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error updating sub-material:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Delete sub-material
+ */
+export async function deleteSubMaterial(subMaterialId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('sub_materials')
+      .delete()
+      .eq('id', subMaterialId)
+
+    if (error) throw error
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting sub-material:', error)
+    return { success: false, error }
+  }
+}

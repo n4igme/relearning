@@ -384,3 +384,287 @@ export async function canAttemptQuest(questId: string, studentId: string) {
     return { canAttempt: false, reason: 'Error checking eligibility' }
   }
 }
+
+/**
+ * Create a quest (mentor only)
+ */
+export async function createQuest(courseId: string, questData: {
+  title: string
+  description?: string
+  passing_score?: number
+  max_attempts?: number
+  time_limit?: number
+}) {
+  const supabase = await createClient()
+
+  try {
+    const newQuest: Database['public']['Tables']['quests']['Insert'] = {
+      course_id: courseId,
+      title: questData.title,
+      description: questData.description,
+      passing_score: questData.passing_score || 70,
+      max_attempts: questData.max_attempts,
+      time_limit: questData.time_limit,
+      is_published: false,
+    }
+
+    const { data, error } = await supabase
+      .from('quests')
+      .insert(newQuest)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error creating quest:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Update quest
+ */
+export async function updateQuest(questId: string, questData: Partial<{
+  title: string
+  description: string
+  passing_score: number
+  max_attempts: number
+  time_limit: number
+  is_published: boolean
+}>) {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('quests')
+      .update(questData)
+      .eq('id', questId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error updating quest:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Delete quest
+ */
+export async function deleteQuest(questId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('quests')
+      .delete()
+      .eq('id', questId)
+
+    if (error) throw error
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting quest:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Create question
+ */
+export async function createQuestion(questId: string, questionData: {
+  question_text: string
+  question_type: 'single_choice' | 'multiple_choice'
+  points: number
+  order_index: number
+}) {
+  const supabase = await createClient()
+
+  try {
+    const newQuestion: Database['public']['Tables']['quest_questions']['Insert'] = {
+      quest_id: questId,
+      question_text: questionData.question_text,
+      question_type: questionData.question_type,
+      points: questionData.points,
+      order_index: questionData.order_index,
+    }
+
+    const { data, error } = await supabase
+      .from('quest_questions')
+      .insert(newQuestion)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error creating question:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Update question
+ */
+export async function updateQuestion(questionId: string, questionData: Partial<{
+  question_text: string
+  question_type: 'single_choice' | 'multiple_choice'
+  points: number
+  order_index: number
+}>) {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('quest_questions')
+      .update(questionData)
+      .eq('id', questionId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error updating question:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Delete question
+ */
+export async function deleteQuestion(questionId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('quest_questions')
+      .delete()
+      .eq('id', questionId)
+
+    if (error) throw error
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting question:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Create option
+ */
+export async function createOption(questionId: string, optionData: {
+  option_text: string
+  is_correct: boolean
+  order_index: number
+}) {
+  const supabase = await createClient()
+
+  try {
+    const newOption: Database['public']['Tables']['quest_options']['Insert'] = {
+      question_id: questionId,
+      option_text: optionData.option_text,
+      is_correct: optionData.is_correct,
+      order_index: optionData.order_index,
+    }
+
+    const { data, error } = await supabase
+      .from('quest_options')
+      .insert(newOption)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error creating option:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Update option
+ */
+export async function updateOption(optionId: string, optionData: Partial<{
+  option_text: string
+  is_correct: boolean
+  order_index: number
+}>) {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('quest_options')
+      .update(optionData)
+      .eq('id', optionId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error updating option:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Delete option
+ */
+export async function deleteOption(optionId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('quest_options')
+      .delete()
+      .eq('id', optionId)
+
+    if (error) throw error
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting option:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Get all quests for a course (mentor view)
+ */
+export async function getAllCourseQuests(courseId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('quests')
+      .select(`
+        *,
+        quest_questions (id)
+      `)
+      .eq('course_id', courseId)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+
+    const questsWithCount = data?.map((quest: any) => ({
+      ...quest,
+      question_count: quest.quest_questions?.length || 0,
+    }))
+
+    return { success: true, data: questsWithCount }
+  } catch (error) {
+    console.error('Error fetching all course quests:', error)
+    return { success: false, error }
+  }
+}
