@@ -23,7 +23,8 @@
       "Bash(docker:*)",
       "Bash(docker-compose:*)",
       "Bash(grep:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
