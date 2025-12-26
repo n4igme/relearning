@@ -9,33 +9,45 @@ interface CourseEnrollmentButtonProps {
   courseId: string
   studentId: string
   isEnrolled?: boolean
+  coursePrice?: number
+  courseCurrency?: string
 }
 
 export function CourseEnrollmentButton({
   courseId,
   studentId,
   isEnrolled = false,
+  coursePrice = 0,
+  courseCurrency = 'IDR',
 }: CourseEnrollmentButtonProps) {
-  const [isEnrolling, setIsEnrolling] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const handleEnroll = async () => {
-    setIsEnrolling(true)
+    setIsLoading(true)
 
     try {
-      const response = await enrollInCourse(studentId, courseId)
-
-      if (response.success) {
-        alert('Successfully enrolled! Your learning streak has been updated.')
-        router.refresh()
+      // Check if course is paid
+      if (coursePrice && coursePrice > 0) {
+        // Redirect to manual payment page
+        router.push(`/courses/${courseId}/enroll`)
+        setIsLoading(false)
       } else {
-        alert(response.error || 'Failed to enroll in course')
+        // Free course - enroll directly
+        const response = await enrollInCourse(studentId, courseId)
+
+        if (response.success) {
+          alert('Successfully enrolled! Your learning streak has been updated.')
+          router.refresh()
+        } else {
+          alert(response.error || 'Failed to enroll in course')
+        }
+        setIsLoading(false)
       }
     } catch (error) {
       console.error('Error enrolling:', error)
       alert('An error occurred while enrolling')
-    } finally {
-      setIsEnrolling(false)
+      setIsLoading(false)
     }
   }
 
@@ -48,8 +60,14 @@ export function CourseEnrollmentButton({
   }
 
   return (
-    <Button onClick={handleEnroll} disabled={isEnrolling}>
-      {isEnrolling ? 'Enrolling...' : 'Enroll Now'}
+    <Button onClick={handleEnroll} disabled={isLoading}>
+      {isLoading
+        ? coursePrice && coursePrice > 0
+          ? 'Loading payment form...'
+          : 'Enrolling...'
+        : coursePrice && coursePrice > 0
+        ? `Enroll for ${courseCurrency} ${coursePrice.toLocaleString()}`
+        : 'Enroll for Free'}
     </Button>
   )
 }

@@ -24,7 +24,10 @@
       "Bash(docker-compose:*)",
       "Bash(grep:*)",
       "Bash(git push)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(supabase --version:*)",
+      "Bash(psql:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

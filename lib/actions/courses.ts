@@ -11,7 +11,7 @@ type ProgressInsert = Database['public']['Tables']['progress']['Insert']
 /**
  * Enroll student in a course
  */
-export async function enrollInCourse(studentId: string, courseId: string) {
+export async function enrollInCourse(studentId: string, courseId: string, skipPaymentCheck = false) {
   const supabase = await createClient()
 
   try {
@@ -25,6 +25,32 @@ export async function enrollInCourse(studentId: string, courseId: string) {
 
     if (existing) {
       return { success: false, error: 'Already enrolled in this course' }
+    }
+
+    // Get course details to check if payment is required
+    const { data: course, error: courseError } = await supabase
+      .from('courses')
+      .select('price')
+      .eq('id', courseId)
+      .single()
+
+    if (courseError || !course) {
+      return { success: false, error: 'Course not found' }
+    }
+
+    // If course is paid and not skipping payment check, verify payment
+    if (!skipPaymentCheck && course.price && course.price > 0) {
+      const { data: payment } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('course_id', courseId)
+        .eq('status', 'completed')
+        .single()
+
+      if (!payment) {
+        return { success: false, error: 'Payment required for this course' }
+      }
     }
 
     // Create enrollment
