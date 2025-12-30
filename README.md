@@ -1,589 +1,436 @@
-# E-Learning Platform
+# Cybersecurity E-Learning Platform
 
-A modern, full-stack e-learning platform built with Next.js 15, TypeScript, Supabase, and Cloudinary.
+A modern, full-stack cybersecurity e-learning platform with gamification, built with Next.js 15, TypeScript, Supabase, and advanced learning features.
 
-## Tech Stack
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green)](https://supabase.com/)
+[![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
 
-- **Frontend & Backend**: Next.js 15 (App Router) + TypeScript
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth (Email/Password + Google OAuth)
-- **File Storage**: Cloudinary (videos, images, documents)
-- **Payments**: Stripe
-- **UI Components**: shadcn/ui + Tailwind CSS
-- **Deployment**: Vercel
+---
 
-## Features
-
-### User Roles
-- **Admin**: Manage users, approve courses, view analytics
-- **Mentor**: Create courses, materials, quests/assessments
-- **Student**: Enroll in courses, complete materials, earn certificates
-
-### Core Functionality
-- Role-based authentication and authorization
-- Google OAuth (SSO) sign-in
-- User approval workflow
-- Course management with video lessons (Cloudinary)
-- Progress tracking system
-- Quest/Assessment system with auto-grading
-- Automatic certificate generation
-- Payment integration with Stripe
-- Real-time enrollment and progress updates
-- Course reviews and ratings
-
-### Gamification System
-- **Points & Rewards**: Earn points for completing quests (100-275 pts), courses (200-800 pts), and maintaining streaks
-- **Badges**: 15 automated achievements across 4 tiers (Bronze, Silver, Gold, Platinum)
-- **Skills Tracking**: 25+ cybersecurity skills with proficiency levels (Beginner → Expert)
-- **Leaderboard**: Global rankings based on total points, badges, and achievements
-- **Learning Streaks**: Daily activity tracking with bonus rewards (7, 30, 100-day milestones)
-- **Skill Progression**: Automatic skill advancement based on quiz performance and course completion
-
-See [GAMIFICATION_GUIDE.md](./GAMIFICATION_GUIDE.md) for detailed integration guide.
-
-## Project Structure
-
-```
-├── app/                    # Next.js App Router
-│   ├── auth/              # OAuth callback handlers
-│   ├── login/             # Login page
-│   ├── register/          # Registration page
-│   ├── dashboard/         # User dashboard
-│   ├── admin/             # Admin pages
-│   │   └── users/         # User management
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
-├── components/            # Reusable React components
-│   └── ui/               # shadcn/ui components
-├── lib/                   # Utilities and configs
-│   ├── supabase/         # Supabase client (server & client)
-│   ├── actions/          # Server Actions
-│   └── utils.ts          # Helper functions
-├── types/                 # TypeScript type definitions
-├── database/             # Database schema and scripts
-│   ├── supabase-schema.sql      # Database schema
-│   └── create-admin.sql         # Admin user script
-└── public/               # Static assets
-```
-
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ installed
-- A Supabase account (free tier)
-- Cloudinary account (optional, for video uploads)
-- Stripe account (optional, for payments)
+- Node.js 20+
+- Supabase account (free tier)
+- Docker (optional, for local staging)
 
-### Installation
+### Get Started in 3 Steps
 
-1. **Clone and install dependencies**:
-   ```bash
-   npm install
-   ```
-
-2. **Copy environment file**:
-   ```bash
-   cp .env.example .env.local
-   ```
-
-3. **Set up Supabase** (see [Supabase Setup](#supabase-setup))
-
-4. **Run development server**:
-   ```bash
-   npm run dev
-   ```
-
-5. **Open browser**: Navigate to http://localhost:3000
-
----
-
-## Supabase Setup
-
-### Step 1: Create Supabase Project (5 minutes)
-
-1. Go to **https://supabase.com** and sign up
-2. Click **"New Project"**
-3. Fill in:
-   - **Name**: `elearning-platform`
-   - **Database Password**: Create a strong password (save it!)
-   - **Region**: Choose closest to your location
-   - **Plan**: Free
-4. Click **"Create new project"** and wait 1-2 minutes
-
-### Step 2: Run Database Schema (5 minutes)
-
-1. In Supabase dashboard, click **"SQL Editor"** → **"New query"**
-2. Open `database/supabase-schema.sql` in your code editor
-3. Copy ALL contents and paste into SQL Editor
-4. Click **"Run"** (or Ctrl+Enter)
-5. Wait ~10-15 seconds
-
-**Expected Result**:
-```
-Success. No rows returned
-NOTICE: E-Learning Platform database schema created successfully!
-NOTICE: Tables created: 20+
-```
-
-**Verify**: Click **"Table Editor"** - you should see 20+ tables (profiles, courses, materials, skills, badges, etc.)
-
-### Step 3: Get API Credentials (2 minutes)
-
-1. Click **"Project Settings"** (gear icon) → **"API"**
-2. Copy these values:
-
-   **Project URL**:
-   ```
-   https://xxxxxxxxxxxxx.supabase.co
-   ```
-
-   **Anon/Public Key** (long JWT token):
-   ```
-   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-   ```
-
-### Step 4: Update Environment Variables (1 minute)
-
-Edit `.env.local`:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-### Step 5: Restart Dev Server
 ```bash
-# Stop server (Ctrl+C), then restart:
+# 1. Install dependencies
+npm install
+
+# 2. Set up environment
+cp .env.local.example .env.local
+# Edit .env.local with your Supabase credentials
+
+# 3. Start development server
 npm run dev
 ```
 
-### Step 6: Seed Gamification Data (Optional but Recommended)
-
-To enable the full gamification experience, run these seed files in Supabase SQL Editor:
-
-1. **Seed Skills** (`database/seed-skills.sql`) - Adds 25+ cybersecurity skills
-2. **Seed Badges** (`database/seed-badges.sql`) - Adds 15 achievement badges
-3. **Seed Tools** (`database/seed-tools.sql`) - Adds cybersecurity tools database
-4. **Seed Test Data** (`database/seed-gamification-test.sql`) - Adds sample courses and quests for testing
-
-**Note**: Run each file separately in the SQL Editor.
-
-### Step 7: Create First Admin User
-
-1. Register a new account at http://localhost:3000/register
-2. In Supabase SQL Editor, run:
-   ```sql
-   UPDATE public.profiles
-   SET role = 'admin', is_approved = true
-   WHERE email = 'your@email.com';
-   ```
-3. Refresh the page - you now have admin access!
+**📖 Full Setup Guide:** See [QUICK-START.md](./QUICK-START.md) for detailed instructions.
 
 ---
 
-## Google OAuth Setup (Students Only)
+## 📚 Documentation
 
-Enable Google Sign-In for students. **Note:** Mentors and admins must use email/password authentication.
-
-### Step 1: Create Google Cloud Project (10 minutes)
-
-1. Go to **Google Cloud Console**: https://console.cloud.google.com
-2. Click **"New Project"** → Name: `elearning-platform`
-3. Go to **"APIs & Services"** → **"OAuth consent screen"**
-4. Choose **"External"** → Click **"Create"**
-5. Fill in:
-   - **App name**: `E-Learning Platform`
-   - **User support email**: Your email
-   - **Developer contact**: Your email
-6. Click **"Save and Continue"** through all steps
-
-### Step 2: Configure Scopes
-
-1. Click **"Add or Remove Scopes"**
-2. Select:
-   - `userinfo.email`
-   - `userinfo.profile`
-3. Click **"Update"** → **"Save and Continue"**
-
-### Step 3: Add Test Users (Important!)
-
-Since the app is in testing mode:
-1. Click **"Add Users"**
-2. Add your email address(es)
-3. Click **"Add"** → **"Save and Continue"**
-
-### Step 4: Create OAuth Client ID
-
-1. Go to **"Credentials"** → **"Create Credentials"** → **"OAuth client ID"**
-2. Choose **"Web application"**
-3. Fill in:
-   - **Name**: `E-Learning Platform Web`
-   - **Authorized JavaScript origins**:
-     - `http://localhost:3000`
-   - **Authorized redirect URIs**:
-     - `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
-
-     ⚠️ Replace `YOUR_PROJECT_REF` with your Supabase project reference (from your Supabase URL)
-
-4. Click **"Create"**
-5. **Save** the Client ID and Client Secret!
-
-### Step 5: Enable Google in Supabase (5 minutes)
-
-1. Go to **Supabase Dashboard** → **Authentication** → **Providers**
-2. Find **Google** and toggle it **ON**
-3. Paste:
-   - **Client ID (for OAuth)**: Your Google Client ID
-   - **Client Secret (for OAuth)**: Your Google Client Secret
-4. Click **"Save"**
-
-### Step 6: Test Google Sign-In
-
-1. Go to http://localhost:3000/login
-2. Click **"Continue with Google"**
-3. Sign in with your Google account (must be in test users list!)
-4. You'll be redirected to the dashboard
-
-**Important Notes**:
-- Google OAuth is **only for students**
-- Mentors and admins cannot use Google sign-in
-- New Google users will have `Pending Approval` status until an admin approves them
-- If a mentor/admin tries to use Google, they'll see an error and be signed out
+| Document | Description |
+|----------|-------------|
+| **[QUICK-START.md](./QUICK-START.md)** | Quick reference for getting started |
+| **[DEPLOYMENT.md](./DEPLOYMENT.md)** | Comprehensive deployment guide (local, staging, production) |
+| **[GAMIFICATION_GUIDE.md](./GAMIFICATION_GUIDE.md)** | Gamification system integration guide |
+| **[STRIPE-SETUP.md](./STRIPE-SETUP.md)** | Payment integration setup |
+| **[MANUAL-PAYMENT-SETUP.md](./MANUAL-PAYMENT-SETUP.md)** | Manual payment approval workflow |
 
 ---
 
-## Cloudinary Setup (Optional)
+## ✨ Features
 
-For video hosting and course thumbnails.
+### 🎓 Learning Management System
+- **Multi-role System** - Admin, Mentor (Instructor), Student
+- **Course Management** - Create courses with videos, documents, and assessments
+- **Progress Tracking** - Granular tracking per lesson with video position
+- **Quizzes & Assessments** - Auto-graded quizzes with multiple question types
+- **Certificates** - Auto-generated on course completion with verification
+- **Video Hosting** - Cloudinary integration for video content
 
-### Step 1: Create Cloudinary Account
+### 💳 Payment Systems
+- **Stripe Integration** - Automated payment processing with webhooks
+- **Manual Payment** - Bank transfer with admin approval workflow
+- **Enrollment Requests** - Upload payment proof, admin reviews and approves
 
-1. Go to https://cloudinary.com/
-2. Sign up for free (25GB storage, 25GB bandwidth/month)
-3. Go to Dashboard and note:
-   - **Cloud Name**
-   - **API Key**
-   - **API Secret**
+### 🎮 Gamification System
+- **Points & Rewards** - Earn 100-275 points per quiz, 200-800 per course
+- **25+ Skills** - Cybersecurity skills (Web Security, Network Security, Cryptography, etc.)
+- **15 Badges** - Bronze to Platinum tier achievements
+- **Leaderboard** - Global rankings based on points and achievements
+- **Learning Streaks** - Daily activity tracking (7, 30, 100-day milestones)
+- **Skill Progression** - Beginner → Intermediate → Advanced → Expert
 
-### Step 2: Update Environment Variables
+### 🔐 Authentication & Security
+- **Email/Password** - Supabase Auth with email verification
+- **Google OAuth SSO** - One-click sign-in for students
+- **Role-Based Access** - Protected routes with middleware
+- **Row Level Security (RLS)** - Database-level security policies
+- **User Approval** - Admin approval workflow for mentors
 
-Edit `.env.local`:
+### 📊 Analytics & Management
+- **User Management** - Admin dashboard for approving users
+- **Enrollment Tracking** - Monitor student progress and completions
+- **Course Analytics** - Reviews, ratings, and enrollment counts
+- **Security Tools Database** - 35+ cybersecurity tools with descriptions
+
+---
+
+## 🏗️ Tech Stack
+
+### Frontend & Backend
+- **Framework:** Next.js 15 (App Router) + TypeScript
+- **UI Components:** shadcn/ui + Tailwind CSS
+- **State Management:** React 19 with Server Components
+
+### Database & Auth
+- **Database:** Supabase (PostgreSQL)
+- **Authentication:** Supabase Auth (Email/Password + Google OAuth)
+- **ORM:** Direct SQL with Supabase Client
+
+### File Storage & Payments
+- **Video/Images:** Cloudinary (25GB free)
+- **Payments:** Stripe (with webhook integration)
+
+### Deployment
+- **Production:** Netlify / Vercel
+- **Staging:** Docker (local PostgreSQL + app)
+- **Development:** Next.js Dev Server with Turbopack
+
+---
+
+## 📁 Project Structure
+
+```
+relearning/
+├── app/                          # Next.js App Router
+│   ├── (auth)/                   # Authentication pages
+│   │   ├── login/
+│   │   └── register/
+│   ├── admin/                    # Admin dashboard
+│   │   ├── users/                # User management
+│   │   └── enrollment-requests/  # Manual payment approval
+│   ├── courses/                  # Course pages
+│   │   └── [courseId]/
+│   │       ├── learn/            # Learning interface
+│   │       └── enroll/           # Enrollment & payment
+│   ├── mentor/                   # Mentor (instructor) dashboard
+│   ├── dashboard/                # User dashboard
+│   ├── gamification/             # Gamification UI
+│   ├── leaderboard/              # Global rankings
+│   ├── skills/                   # Skills tracking
+│   ├── certificates/             # Student certificates
+│   └── api/                      # API routes
+│       ├── checkout/             # Stripe checkout
+│       └── webhooks/stripe/      # Payment webhooks
+├── components/                   # React components
+│   ├── ui/                       # shadcn/ui components
+│   ├── admin/                    # Admin components
+│   └── ...                       # Feature components
+├── lib/                          # Core utilities
+│   ├── supabase/                 # Supabase client (server & client)
+│   ├── actions/                  # Server Actions
+│   │   ├── auth.ts               # Authentication
+│   │   ├── courses.ts            # Course operations
+│   │   ├── quests.ts             # Quiz/assessment logic
+│   │   ├── gamification.ts       # Points & badges
+│   │   └── payments.ts           # Payment processing
+│   └── utils.ts                  # Helper functions
+├── database/                     # Database scripts
+│   ├── supabase-schema.sql       # Full Supabase schema
+│   ├── local-schema.sql          # Local PostgreSQL schema
+│   ├── seed-skills.sql           # Seed 25 cybersecurity skills
+│   ├── seed-badges.sql           # Seed 15 badges
+│   └── seed-tools.sql            # Seed 35 security tools
+├── types/                        # TypeScript definitions
+├── public/                       # Static assets
+└── .env files                    # Environment configurations
+```
+
+---
+
+## 🗄️ Database Schema
+
+### Core Tables (13)
+- `profiles` - User accounts and roles
+- `courses` - Course information
+- `materials` - Course sections/chapters
+- `sub_materials` - Individual lessons
+- `enrollments` - Student enrollments
+- `progress` - Lesson completion tracking
+- `quests` - Quizzes/assessments
+- `quest_questions` - Quiz questions
+- `quest_options` - Multiple choice options
+- `quest_attempts` - Student quiz attempts
+- `certificates` - Course certificates
+- `payments` - Payment records
+- `reviews` - Course ratings
+
+### Gamification Tables (7)
+- `skills` - 25+ cybersecurity skills
+- `student_skills` - Skill proficiency tracking
+- `badges` - 15 achievement badges
+- `student_badges` - Earned badges
+- `leaderboard_stats` - Global rankings
+- `point_history` - Points transaction log
+- `course_skills` - Course-skill mappings
+
+### Additional Tables
+- `security_tools` - Cybersecurity tools database
+- `enrollment_requests` - Manual payment requests
+
+**Total:** 20+ tables with Row Level Security policies
+
+---
+
+## 🚢 Deployment
+
+### Local Development
+```bash
+npm run dev
+```
+Access: http://localhost:3000
+
+### Staging (Docker with Local Database)
+```bash
+npm run docker:staging:up:build
+```
+Includes: PostgreSQL + App + pgAdmin (optional)
+
+### Production (Netlify)
+```bash
+git push origin main
+```
+Auto-deploys on push to main branch
+
+**📖 Full Deployment Guide:** See [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+---
+
+## 📝 Available Scripts
+
+### Development
+```bash
+npm run dev              # Start dev server with Turbopack
+npm run build            # Build for production
+npm run start            # Run production build
+npm run lint             # Run ESLint
+npm run type-check       # TypeScript type checking
+```
+
+### Docker - Staging
+```bash
+npm run docker:staging:up             # Start staging environment
+npm run docker:staging:up:build       # Rebuild and start
+npm run docker:staging:up:pgadmin     # Start with pgAdmin UI
+npm run docker:staging:down           # Stop all services
+npm run docker:staging:logs           # View logs
+npm run docker:staging:restart        # Restart app
+```
+
+### Docker - Production
+```bash
+npm run docker:prod:up               # Start production-like env
+npm run docker:prod:up:build         # Rebuild and start
+npm run docker:prod:down             # Stop
+npm run docker:prod:logs             # View logs
+```
+
+---
+
+## 🔧 Environment Setup
+
+### Environment Files
+
+| File | Purpose | Committed? |
+|------|---------|------------|
+| `.env.local` | Local development | ❌ No |
+| `.env.docker` | Docker staging | ❌ No |
+| `.env.local.example` | Local template | ✅ Yes |
+| `.env.staging.example` | Staging template | ✅ Yes |
+| `.env.production.example` | Production template | ✅ Yes |
+
+### Required Environment Variables
+
 ```env
+# Supabase (Database & Auth)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Cloudinary (Video & Image Hosting)
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-```
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
 
-### Step 3: Restart Dev Server
-```bash
-npm run dev
-```
+# Stripe (Payment Processing - Optional)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_or_live_key
+STRIPE_SECRET_KEY=sk_test_or_live_key
+STRIPE_WEBHOOK_SECRET=whsec_webhook_secret
 
-**Cloudinary is ready!** You can now upload course videos and thumbnails.
-
----
-
-## Database Structure
-
-### Core Tables
-
-**profiles** - User profiles (extends Supabase Auth)
-- Stores role (admin, mentor, student)
-- Approval status and account activation
-- Auto-created via database trigger on signup
-
-**courses** - Course information
-- Created by mentors/admins
-- Approval workflow
-- Tracks enrollment count and ratings
-
-**materials** - Course chapters/sections
-- Belongs to a course
-- Contains sub-materials (lessons)
-
-**sub_materials** - Individual lessons/videos
-- Video URLs from Cloudinary
-- Document uploads
-- Preview capability
-
-**enrollments** - Student course enrollments
-- Links students to courses
-- Tracks overall progress
-- Records last access
-
-**progress** - Granular progress tracking
-- Completion of each sub-material
-- Video playback position
-- Time spent
-
-**quests** - Assessments/Quizzes
-- Created by instructors
-- Questions with options
-- Passing score requirement
-
-**quest_attempts** - Student quiz attempts
-- Records scores and answers
-- Tracks pass/fail status
-
-**certificates** - Auto-generated certificates
-- Issued on course completion
-- Unique certificate number
-- Verification URL
-
-**payments** - Stripe payment records
-- Tracks payment status
-- Stripe integration IDs
-
-**reviews** - Course reviews/ratings
-- 1-5 star rating
-- Written feedback
-
-### Gamification Tables
-
-**skills** - Cybersecurity skill definitions
-- 25+ skills across 6 categories
-- Web Security, Network Security, Cryptography, etc.
-
-**student_skills** - Student skill progression
-- Tracks proficiency levels (beginner → expert)
-- Points earned per skill
-
-**badges** - Achievement badges
-- 15 badges across 4 tiers
-- Auto-awarded based on milestones
-
-**student_badges** - Earned badges
-- Timestamp of achievement
-- Badge progress tracking
-
-**leaderboard_stats** - Student rankings
-- Total points, badges, courses completed
-- Learning streaks and averages
-- Global rank
-
-**point_history** - Points transaction log
-- Tracks all point awards
-- Source tracking (quest, course, skill, streak)
-
-**course_skills** - Links courses to skills
-- Defines which skills a course teaches
-- Proficiency level taught
-
----
-
-## Development Commands
-
-```bash
-# Start dev server (with Turbopack)
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-```
-
----
-
-## Environment Variables
-
-Complete `.env.local` template:
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI...
-
-# Cloudinary (Optional)
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# Stripe (Optional)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
-STRIPE_SECRET_KEY=sk_test_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-
-# App
+# App URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ---
 
-## Security Features
+## 🎯 Key Features Breakdown
 
-### Row Level Security (RLS)
-All tables have RLS policies:
-- **Public**: Can view published courses
-- **Students**: Can view/update own enrollments, progress, certificates
-- **Mentors**: Can create/edit own courses
-- **Admins**: Full access to all data
+### User Roles
 
-### Auto-Generated Profiles
-When users sign up, a profile is automatically created via database trigger.
+| Role | Capabilities |
+|------|--------------|
+| **Admin** | Full access: user management, course approval, analytics |
+| **Mentor** | Create courses, materials, quizzes; view student progress |
+| **Student** | Enroll in courses, complete lessons, earn certificates |
 
-### Google OAuth
-- Secure OAuth 2.0 flow
-- Email verified automatically by Google
-- No password to remember
-
----
-
-## Free Tier Limits
-
-**Supabase Free**:
-- Database: 500MB storage
-- Bandwidth: 2GB/month
-- Auth: 50,000 MAU
-
-**Cloudinary Free**:
-- Storage: 25GB
-- Bandwidth: 25GB/month
-- Videos: 500/month
-
-**Vercel Free**:
-- 100GB bandwidth/month
-- Unlimited deployments
-
----
-
-## Troubleshooting
-
-### Database Issues
-
-**Error: "relation already exists"**
-- You're running the schema twice. Create a new Supabase project or drop all tables first.
-
-**Tables not showing up**
-- Refresh the page
-- Check SQL Editor for errors
-- Verify you clicked "Run"
-
-### Authentication Issues
-
-**Can't login after Google sign-up**
-- Account needs admin approval
-- Admin must approve in `/admin/users`
-
-**Error: "403: access_denied" (Google)**
-- Your email is not in test users list
-- Add it in Google Cloud Console → OAuth consent screen → Test users
-
-**Error: "Invalid client ID" (Google)**
-- Double-check Client ID matches in Supabase and Google Console
-
-### Connection Issues
-
-**Can't connect from app**
-- Check URL and anon key are correct in `.env.local`
-- No extra spaces in environment variables
-- Restart dev server after changing `.env.local`
-
----
-
-## Deployment
-
-### Option 1: Docker (Local/Production)
-
-**Build and run with Docker:**
-
-```bash
-# Production build
-docker-compose up --build -d
-
-# Development build (with hot reload)
-docker-compose -f docker-compose.dev.yml up --build
-
-# View logs
-docker-compose logs -f
-
-# Stop containers
-docker-compose down
+### Course Structure
+```
+Course
+├── Materials (Chapters)
+│   └── Sub-Materials (Lessons)
+│       ├── Videos (Cloudinary)
+│       ├── Documents
+│       └── Preview (free)
+├── Quizzes
+│   ├── Questions
+│   └── Auto-grading
+└── Certificate (auto-issued)
 ```
 
-Your app will be available at: **http://localhost:3000**
-
-**Docker Features:**
-- ✅ Production-optimized build with multi-stage Dockerfile
-- ✅ Standalone Next.js output for faster cold starts
-- ✅ Development mode with hot reload
-- ✅ Minimal image size using Alpine Linux
-
-### Option 2: Deploy to Vercel (Recommended for Cloud)
-
-1. Push your code to GitHub
-2. Go to https://vercel.com
-3. Import your repository
-4. Add environment variables (same as `.env`)
-5. Deploy!
-
-**Update Google OAuth** after deployment:
-- Add production URL to Authorized JavaScript origins
-- Example: `https://your-app.vercel.app`
-
-### Option 3: Deploy to Netlify
-
-1. Push your code to GitHub
-2. Go to https://netlify.com
-3. Import your repository
-4. Build settings:
-   - **Build command**: `npm run build`
-   - **Publish directory**: `.next`
-5. Add environment variables
-6. Deploy!
+### Gamification Flow
+```
+Complete Quiz → Earn Points → Level Up Skills → Unlock Badges → Climb Leaderboard
+```
 
 ---
 
-## Project Status
+## 🔒 Security Features
 
-✅ **Completed**:
-- Next.js 15 + TypeScript setup
-- Supabase integration (PostgreSQL)
-- Email/Password authentication
-- Google OAuth SSO (students only)
-- Role-based access control (Admin, Mentor, Student)
-- User management dashboard with approval workflow
-- Protected routes & middleware
-- Database schema with RLS policies
-- Docker containerization (production & development)
-- Netlify/Vercel deployment ready
-
-✅ **Gamification Features**:
-- Points and rewards system
-- 15 automated badges (Bronze, Silver, Gold, Platinum tiers)
-- 25+ cybersecurity skills tracking
-- Global leaderboard with rankings
-- Learning streaks (7, 30, 100-day milestones)
-- Skill progression (Beginner → Expert)
-
-🚧 **In Progress**:
-- Course creation interface (UI)
-- Video upload with Cloudinary (UI)
-- Stripe payment integration (UI)
-- Advanced analytics dashboard
+- **Row Level Security (RLS)** - All tables protected at database level
+- **Protected Routes** - Middleware-based route protection
+- **Email Verification** - Required for email/password auth
+- **Admin Approval** - Mentor accounts require admin approval
+- **Webhook Verification** - Stripe webhook signature validation
+- **Input Sanitization** - Server-side validation on all inputs
 
 ---
 
-## Support & Resources
+## 📊 Free Tier Limits
 
-- **Supabase**: https://supabase.com/docs
-- **Next.js**: https://nextjs.org/docs
-- **shadcn/ui**: https://ui.shadcn.com
-- **Cloudinary**: https://cloudinary.com/documentation
-- **Stripe**: https://stripe.com/docs
-
----
-
-## License
-
-ISC License
+| Service | Free Tier |
+|---------|-----------|
+| **Supabase** | 500MB DB, 2GB bandwidth/month, 50K users |
+| **Cloudinary** | 25GB storage, 25GB bandwidth/month |
+| **Netlify** | 100GB bandwidth/month, unlimited deployments |
+| **Stripe** | No monthly fee, pay per transaction |
 
 ---
 
-**Built with**: Next.js 15 | TypeScript | Supabase | Cloudinary | Stripe | Tailwind CSS
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Build Fails with Missing UI Components**
+```bash
+# Install missing Radix UI dependencies
+npm install @radix-ui/react-dialog @radix-ui/react-tabs @radix-ui/react-alert-dialog
+```
+
+**Docker: Port Already in Use**
+```bash
+# Change port in .env.docker
+APP_PORT=3001
+```
+
+**Supabase: Can't Connect**
+- Verify credentials in `.env.local`
+- Check for trailing spaces in environment variables
+- Restart dev server after changing `.env`
+
+**More troubleshooting:** See [DEPLOYMENT.md](./DEPLOYMENT.md#troubleshooting)
+
+---
+
+## 🗺️ Roadmap
+
+### ✅ Completed
+- [x] Core authentication (email/password + Google OAuth)
+- [x] Role-based access control
+- [x] Course management system
+- [x] Video lessons with Cloudinary
+- [x] Quiz/assessment system
+- [x] Progress tracking
+- [x] Certificate generation
+- [x] Gamification (points, badges, skills, leaderboard)
+- [x] Stripe payment integration
+- [x] Manual payment approval workflow
+- [x] Docker deployment
+- [x] Comprehensive documentation
+
+### 🚧 In Progress
+- [ ] Advanced analytics dashboard
+- [ ] Mentor earnings/payouts
+- [ ] Course marketplace
+- [ ] Live class integration
+- [ ] Discussion forums
+- [ ] Mobile app (React Native)
+
+### 💡 Planned
+- [ ] AI-powered course recommendations
+- [ ] Peer-to-peer learning features
+- [ ] Certificate blockchain verification
+- [ ] Multi-language support
+- [ ] Dark mode
+
+---
+
+## 🤝 Contributing
+
+This is a portfolio/learning project, but suggestions are welcome!
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+ISC License - See [LICENSE](./LICENSE) file for details
+
+---
+
+## 🙏 Acknowledgments
+
+- **Next.js Team** - Amazing React framework
+- **Supabase** - Backend as a Service
+- **shadcn/ui** - Beautiful component library
+- **Vercel** - Hosting and deployment
+- **Cloudinary** - Media management
+
+---
+
+## 📧 Support
+
+For questions or issues:
+1. Check [DEPLOYMENT.md](./DEPLOYMENT.md) troubleshooting section
+2. Review [QUICK-START.md](./QUICK-START.md)
+3. Create an issue on GitHub
+
+---
+
+**Built with ❤️ using Next.js 15 | TypeScript | Supabase | Cloudinary | Stripe | Tailwind CSS**
+
+**Version:** 2.0.0 | **Last Updated:** December 2025
