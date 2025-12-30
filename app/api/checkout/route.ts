@@ -4,12 +4,27 @@ import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { createPayment } from '@/lib/actions/payments'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-})
+const getStripe = () => {
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  if (!secretKey || secretKey === 'your_stripe_secret_key') {
+    return null
+  }
+  return new Stripe(secretKey, {
+    apiVersion: '2024-12-18.acacia',
+  })
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const stripe = getStripe()
+
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Payment processing is not configured. Please contact the administrator.' },
+        { status: 503 }
+      )
+    }
+
     const { courseId } = await req.json()
 
     if (!courseId) {

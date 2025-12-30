@@ -27,7 +27,10 @@
       "Bash(git rm:*)",
       "Bash(supabase --version:*)",
       "Bash(psql:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npx shadcn-ui@latest add:*)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []

@@ -1,3 +1,24 @@
+# ===============================================
+# STAGING ENVIRONMENT (Local Docker with PostgreSQL)
+# ===============================================
+# Full local development/staging environment including:
+# - Next.js Application
+# - PostgreSQL Database
+# - pgAdmin (optional database UI)
+#
+# Usage:
+#   # Start all services
+#   docker-compose -f docker-compose.staging.yml up -d
+#
+#   # Start with pgAdmin
+#   docker-compose -f docker-compose.staging.yml --profile tools up -d
+#
+#   # Stop all services
+#   docker-compose -f docker-compose.staging.yml down
+#
+# Environment variables: .env.docker
+# ===============================================
+
 version: '3.8'
 
 services:

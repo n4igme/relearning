@@ -1,3 +1,16 @@
+# ===============================================
+# SIMPLE DOCKER DEPLOYMENT (Production-like)
+# ===============================================
+# This is a simple Docker setup for running the app only
+# Uses Supabase cloud database (no local PostgreSQL)
+#
+# Usage:
+#   docker-compose up -d
+#
+# For full staging environment with PostgreSQL, use:
+#   docker-compose -f docker-compose.staging.yml up -d
+# ===============================================
+
 services:
   app:
     build:

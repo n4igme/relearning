@@ -4,14 +4,28 @@ import { createClient } from '@/lib/supabase/server'
 import { updatePaymentStatus } from '@/lib/actions/payments'
 import { enrollInCourse } from '@/lib/actions/courses'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-})
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+const getStripe = () => {
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  if (!secretKey || secretKey === 'your_stripe_secret_key') {
+    return null
+  }
+  return new Stripe(secretKey, {
+    apiVersion: '2024-12-18.acacia',
+  })
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const stripe = getStripe()
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
+    if (!stripe || !webhookSecret || webhookSecret === 'your_stripe_webhook_secret') {
+      return NextResponse.json(
+        { error: 'Webhook processing is not configured' },
+        { status: 503 }
+      )
+    }
+
     const body = await req.text()
     const signature = req.headers.get('stripe-signature')
 
