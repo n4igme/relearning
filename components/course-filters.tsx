@@ -13,8 +13,13 @@ export function CourseFilters() {
   const [search, setSearch] = useState(searchParams.get('search') || '')
   const currentDifficulty = searchParams.get('difficulty') || ''
   const currentCategory = searchParams.get('category') || ''
+  const currentTrack = searchParams.get('track') || ''
 
   const difficulties = ['beginner', 'intermediate', 'advanced']
+  const tracks = [
+    { value: 'offensive', label: '🔴 Offensive Security', description: 'Ethical Hacking & Penetration Testing' },
+    { value: 'defensive', label: '🔵 Defensive Security', description: 'Security Operations & Blue Team' },
+  ]
   const categories = [
     'Web Application Security',
     'Network Security',
@@ -56,7 +61,7 @@ export function CourseFilters() {
     router.push('/courses')
   }
 
-  const hasActiveFilters = currentDifficulty || currentCategory || search
+  const hasActiveFilters = currentDifficulty || currentCategory || currentTrack || search
 
   return (
     <Card>
@@ -73,6 +78,24 @@ export function CourseFilters() {
             />
             <Button type="submit">Search</Button>
           </form>
+
+          {/* Learning Path Filter */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Learning Path</h3>
+            <div className="flex flex-wrap gap-2">
+              {tracks.map((track) => (
+                <Button
+                  key={track.value}
+                  variant={currentTrack === track.value ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => updateFilter('track', track.value)}
+                  title={track.description}
+                >
+                  {track.label}
+                </Button>
+              ))}
+            </div>
+          </div>
 
           {/* Difficulty Filter */}
           <div>

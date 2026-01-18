@@ -6,10 +6,20 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { CourseFilters } from '@/components/course-filters'
 
+// Helper function to determine learning track from category
+function getCourseTrack(category: string): 'offensive' | 'defensive' | 'both' {
+  const offensiveCategories = ['Web Application Security', 'Reverse Engineering', 'Malware Analysis']
+  const defensiveCategories = ['Network Security', 'Forensics', 'Cloud Security']
+
+  if (offensiveCategories.includes(category)) return 'offensive'
+  if (defensiveCategories.includes(category)) return 'defensive'
+  return 'both'
+}
+
 export default async function CoursesPage({
   searchParams,
 }: {
-  searchParams: { difficulty?: string; category?: string; search?: string }
+  searchParams: { difficulty?: string; category?: string; track?: string; search?: string }
 }) {
   const profile = await getUserProfile()
 
@@ -33,6 +43,7 @@ export default async function CoursesPage({
   // Apply filters
   const difficulty = searchParams.difficulty
   const category = searchParams.category
+  const track = searchParams.track
   const search = searchParams.search?.toLowerCase()
 
   if (difficulty) {
@@ -41,6 +52,13 @@ export default async function CoursesPage({
 
   if (category) {
     courses = courses.filter((course: any) => course.category === category)
+  }
+
+  if (track) {
+    courses = courses.filter((course: any) => {
+      const courseTrack = getCourseTrack(course.category)
+      return courseTrack === track || courseTrack === 'both'
+    })
   }
 
   if (search) {
@@ -87,6 +105,7 @@ export default async function CoursesPage({
               {courses.map((course: any) => {
                 const isEnrolled = enrolledCourseIds.includes(course.id)
                 const instructor = course.profiles
+                const courseTrack = getCourseTrack(course.category)
 
                 return (
                   <Link key={course.id} href={`/courses/${course.id}`}>
@@ -115,6 +134,25 @@ export default async function CoursesPage({
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
+                          {/* Learning Path Badge */}
+                          <div className="flex items-center gap-1 text-xs">
+                            {courseTrack === 'offensive' && (
+                              <span className="px-2 py-1 rounded bg-red-50 text-red-700 border border-red-200">
+                                🔴 Offensive Security
+                              </span>
+                            )}
+                            {courseTrack === 'defensive' && (
+                              <span className="px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                🔵 Defensive Security
+                              </span>
+                            )}
+                            {courseTrack === 'both' && (
+                              <span className="px-2 py-1 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                                🟣 Both Tracks
+                              </span>
+                            )}
+                          </div>
+
                           {/* Difficulty & Category */}
                           <div className="flex flex-wrap gap-2 text-xs">
                             <span className={`px-2 py-1 rounded ${
@@ -125,7 +163,7 @@ export default async function CoursesPage({
                               {course.difficulty}
                             </span>
                             {course.category && (
-                              <span className="px-2 py-1 rounded bg-purple-100 text-purple-700">
+                              <span className="px-2 py-1 rounded bg-gray-100 text-gray-700">
                                 {course.category}
                               </span>
                             )}
