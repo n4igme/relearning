@@ -1,38 +1,17 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  // Check for Supabase auth cookies instead of making API calls
+  // This avoids DNS/network issues in Netlify edge functions
+  const accessToken = request.cookies.get('sb-access-token')
+  const refreshToken = request.cookies.get('sb-refresh-token')
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
+  // Alternative: check for the default Supabase cookie name pattern
+  const supabaseCookies = request.cookies.getAll().filter(cookie =>
+    cookie.name.includes('sb-') && cookie.name.includes('-auth-token')
   )
 
-  // Refresh session if expired
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const hasAuthCookie = accessToken || refreshToken || supabaseCookies.length > 0
 
   // Protected routes - require authentication
   const protectedPaths = ['/dashboard', '/courses', '/admin', '/mentor', '/student']
@@ -40,7 +19,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   )
 
-  if (isProtectedPath && !user) {
+  if (isProtectedPath && !hasAuthCookie) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
     redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname)
@@ -53,11 +32,11 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   )
 
-  if (isAuthPath && user) {
+  if (isAuthPath && hasAuthCookie) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {
