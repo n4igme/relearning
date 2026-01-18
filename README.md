@@ -1,6 +1,6 @@
-# Cybersecurity E-Learning Platform
+# CyberSec Academy
 
-A modern, full-stack cybersecurity e-learning platform with gamification, built with Next.js 15, TypeScript, Supabase, and advanced learning features.
+Master ethical hacking, penetration testing, and security operations through hands-on cybersecurity training. A modern e-learning platform with gamification, built with Next.js 15, TypeScript, and Supabase.
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)

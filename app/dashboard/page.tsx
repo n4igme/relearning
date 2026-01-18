@@ -49,7 +49,9 @@ export default async function DashboardPage() {
         <div className="mb-8">
           <h2 className="text-3xl font-bold">Welcome back, {profile.full_name}!</h2>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Your role: <span className="font-medium capitalize">{profile.role}</span>
+            {profile.role === 'student' && "Continue your cybersecurity journey and master new security skills."}
+            {profile.role === 'mentor' && "Shape the next generation of cybersecurity professionals."}
+            {profile.role === 'admin' && "Manage the CyberSec Academy platform and community."}
           </p>
         </div>
 

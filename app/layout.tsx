@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "E-Learning Platform",
-  description: "Modern learning management system built with Next.js and Supabase",
+  title: "CyberSec Academy",
+  description: "Master cybersecurity skills through hands-on courses in ethical hacking, penetration testing, and security operations",
 };
 
 export default function RootLayout({

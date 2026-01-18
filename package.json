@@ -1,7 +1,7 @@
 {
-  "name": "elearning-platform",
+  "name": "cybersec-academy",
   "version": "2.0.0",
-  "description": "Modern e-learning platform built with Next.js 15, TypeScript, and Supabase",
+  "description": "Cybersecurity training platform focused on ethical hacking and security operations, built with Next.js 15, TypeScript, and Supabase",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
