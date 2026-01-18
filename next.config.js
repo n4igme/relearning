@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // Important for Docker deployments
+  // output: 'standalone', // Only for Docker deployments - disabled for Netlify
   typescript: {
     // Skip type checking during build (types are checked in development)
     ignoreBuildErrors: true,
