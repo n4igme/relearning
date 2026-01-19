@@ -16,6 +16,21 @@ const getStripe = () => {
 
 export async function POST(req: NextRequest) {
   try {
+    // CSRF Protection: Verify origin header matches expected domain
+    const origin = req.headers.get('origin')
+    const referer = req.headers.get('referer')
+    const expectedOrigin = process.env.NEXT_PUBLIC_APP_URL
+
+    if (expectedOrigin) {
+      const isValidOrigin = origin === expectedOrigin || referer?.startsWith(expectedOrigin)
+      if (!isValidOrigin) {
+        return NextResponse.json(
+          { error: 'Invalid request origin' },
+          { status: 403 }
+        )
+      }
+    }
+
     const stripe = getStripe()
 
     if (!stripe) {
@@ -29,6 +44,12 @@ export async function POST(req: NextRequest) {
 
     if (!courseId) {
       return NextResponse.json({ error: 'Course ID is required' }, { status: 400 })
+    }
+
+    // Validate courseId is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(courseId)) {
+      return NextResponse.json({ error: 'Invalid course ID format' }, { status: 400 })
     }
 
     // Get the authenticated user
@@ -45,7 +66,7 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (profileError || !profile) {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
@@ -56,7 +77,7 @@ export async function POST(req: NextRequest) {
       .from('courses')
       .select('*')
       .eq('id', courseId)
-      .single()
+      .maybeSingle()
 
     if (courseError || !course) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 })
@@ -76,7 +97,7 @@ export async function POST(req: NextRequest) {
       .select('*')
       .eq('student_id', user.id)
       .eq('course_id', courseId)
-      .single()
+      .maybeSingle()
 
     if (existingEnrollment) {
       return NextResponse.json(
@@ -92,7 +113,7 @@ export async function POST(req: NextRequest) {
       .eq('student_id', user.id)
       .eq('course_id', courseId)
       .eq('status', 'completed')
-      .single()
+      .maybeSingle()
 
     if (existingPayment) {
       return NextResponse.json(

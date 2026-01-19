@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // output: 'standalone', // Only for Docker deployments - disabled for Netlify
+  output: 'standalone', // Required for Docker deployments (disable for Netlify)
+  outputFileTracingRoot: __dirname, // Fix lockfile detection warning
   typescript: {
     // Skip type checking during build (types are checked in development)
     ignoreBuildErrors: true,

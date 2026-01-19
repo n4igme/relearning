@@ -18,12 +18,12 @@ export async function GET(request: Request) {
 
     if (sessionError) {
       console.error('[Auth Callback] Error exchanging code for session:', sessionError)
-      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Authentication failed: ' + sessionError.message)}`)
+      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Authentication failed. Please try again.')}`)
     }
 
     if (!sessionData?.user) {
       console.error('[Auth Callback] No user data returned from session exchange')
-      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to authenticate. Please try again.')}`)
+      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Authentication failed. Please try again.')}`)
     }
 
     if (sessionData?.user) {
@@ -53,9 +53,9 @@ export async function GET(request: Request) {
         const { error: insertError } = await supabase.from('profiles').insert(profileData)
 
         if (insertError) {
-          console.error('Error creating profile:', insertError)
+          console.error('[Auth Callback] Error creating profile:', insertError)
           await supabase.auth.signOut()
-          return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to create profile: ' + insertError.message)}`)
+          return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to create account. Please try again or contact support.')}`)
         }
 
         // Redirect to pending approval page
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
 
             if (approveError) {
               console.error('[Auth Callback] Error approving student:', approveError)
-              return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to auto-approve account: ' + approveError.message)}`)
+              return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Account setup failed. Please contact support.')}`)
             } else {
               console.log('[Auth Callback] Student auto-approved successfully!')
               // Update the existingProfile object so the check below passes
@@ -103,7 +103,7 @@ export async function GET(request: Request) {
             }
           } catch (err) {
             console.error('[Auth Callback] Exception during auto-approval:', err)
-            return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Failed to auto-approve account. Please contact support.')}`)
+            return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Account setup failed. Please contact support.')}`)
           }
         }
       }

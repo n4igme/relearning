@@ -7,13 +7,41 @@ import { revalidatePath } from 'next/cache'
 export async function signUp(formData: FormData) {
   const supabase = await createClient()
 
+  // Validate and extract form data
+  const email = formData.get('email')?.toString().trim()
+  const password = formData.get('password')?.toString()
+  const full_name = formData.get('full_name')?.toString().trim()
+  const role = formData.get('role')?.toString() || 'student'
+
+  // Input validation
+  if (!email || !password || !full_name) {
+    return { error: 'All fields are required' }
+  }
+
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    return { error: 'Invalid email format' }
+  }
+
+  // Password strength validation
+  if (password.length < 8) {
+    return { error: 'Password must be at least 8 characters long' }
+  }
+
+  // Role validation
+  const validRoles = ['student', 'mentor']
+  if (!validRoles.includes(role)) {
+    return { error: 'Invalid role' }
+  }
+
   const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
+    email,
+    password,
     options: {
       data: {
-        full_name: formData.get('full_name') as string,
-        role: (formData.get('role') as string) || 'student',
+        full_name,
+        role,
       },
     },
   }
@@ -21,7 +49,7 @@ export async function signUp(formData: FormData) {
   const { error } = await supabase.auth.signUp(data)
 
   if (error) {
-    return { error: error.message }
+    return { error: 'Failed to create account. Please try again.' }
   }
 
   revalidatePath('/', 'layout')
@@ -31,16 +59,31 @@ export async function signUp(formData: FormData) {
 export async function signIn(formData: FormData) {
   const supabase = await createClient()
 
+  // Validate and extract form data
+  const email = formData.get('email')?.toString().trim()
+  const password = formData.get('password')?.toString()
+
+  // Input validation
+  if (!email || !password) {
+    redirect('/login?error=' + encodeURIComponent('Email and password are required'))
+  }
+
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    redirect('/login?error=' + encodeURIComponent('Invalid email format'))
+  }
+
   const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
+    email,
+    password,
   }
 
   const { error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
-    // Redirect to login with error message
-    redirect(`/login?error=${encodeURIComponent(error.message)}`)
+    // Redirect to login with generic error message
+    redirect(`/login?error=${encodeURIComponent('Invalid email or password')}`)
   }
 
   revalidatePath('/', 'layout')

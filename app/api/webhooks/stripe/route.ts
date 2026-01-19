@@ -163,8 +163,27 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       status: 'refunded',
     })
 
-    // TODO: Optionally revoke course access here
-    // You might want to implement logic to remove enrollment or disable access
+    // Revoke course access: Find and remove enrollment
+    const { getPaymentByIntentId } = await import('@/lib/actions/payments')
+    const payment = await getPaymentByIntentId(paymentIntentId)
+
+    if (payment) {
+      const { createClient } = await import('@/lib/supabase/server')
+      const supabase = await createClient()
+
+      // Delete enrollment to revoke access
+      const { error: deleteError } = await supabase
+        .from('enrollments')
+        .delete()
+        .eq('student_id', payment.student_id)
+        .eq('course_id', payment.course_id)
+
+      if (deleteError) {
+        console.error('Error revoking course access:', deleteError)
+      } else {
+        console.log(`Course access revoked for student ${payment.student_id}, course ${payment.course_id}`)
+      }
+    }
   } catch (error) {
     console.error('Error updating payment for refunded charge:', error)
   }

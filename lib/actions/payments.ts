@@ -82,7 +82,7 @@ export async function updatePaymentStatus({
     throw new Error('Either paymentIntentId or sessionId must be provided')
   }
 
-  const { data: existingPayment, error: findError } = await query.select().single()
+  const { data: existingPayment, error: findError } = await query.select().maybeSingle()
 
   if (findError || !existingPayment) {
     console.error('Payment not found:', findError)
@@ -90,7 +90,11 @@ export async function updatePaymentStatus({
   }
 
   // Update the payment status
-  const updateData: any = {
+  const updateData: {
+    status: string
+    updated_at: string
+    stripe_payment_intent_id?: string
+  } = {
     status,
     updated_at: new Date().toISOString(),
   }
@@ -125,14 +129,14 @@ export async function getPaymentBySessionId(sessionId: string) {
     .from('payments')
     .select('*')
     .eq('stripe_session_id', sessionId)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('Error fetching payment:', error)
     return null
   }
 
-  return data as PaymentRecord
+  return data as PaymentRecord | null
 }
 
 /**
@@ -146,14 +150,14 @@ export async function getPaymentByIntentId(paymentIntentId: string) {
     .from('payments')
     .select('*')
     .eq('stripe_payment_intent_id', paymentIntentId)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('Error fetching payment:', error)
     return null
   }
 
-  return data as PaymentRecord
+  return data as PaymentRecord | null
 }
 
 /**
@@ -169,7 +173,7 @@ export async function hasStudentPaidForCourse(studentId: string, courseId: strin
     .eq('student_id', studentId)
     .eq('course_id', courseId)
     .eq('status', 'completed')
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
     return false

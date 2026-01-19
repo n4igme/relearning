@@ -34,9 +34,11 @@ export async function submitQuestAttempt(
         )
       `)
       .eq('id', questId)
-      .single()
+      .maybeSingle()
 
-    if (questError) throw questError
+    if (questError || !quest) {
+      throw new Error('Quest not found')
+    }
 
     // Check max attempts
     if (quest.max_attempts) {
@@ -58,15 +60,27 @@ export async function submitQuestAttempt(
     let totalPoints = 0
     let earnedPoints = 0
 
-    const questions = quest.quest_questions as any[]
+    interface QuestOption {
+      id: string
+      is_correct: boolean
+    }
+
+    interface QuestQuestion {
+      id: string
+      question_text: string
+      points: number
+      quest_options: QuestOption[]
+    }
+
+    const questions = quest.quest_questions as QuestQuestion[]
 
     questions.forEach((question) => {
       totalPoints += question.points || 1
       const studentAnswer = answers[question.id]
 
       // Check if answer is correct
-      const correctOptions = question.quest_options.filter((opt: any) => opt.is_correct)
-      const correctOptionIds = correctOptions.map((opt: any) => opt.id)
+      const correctOptions = question.quest_options.filter((opt) => opt.is_correct)
+      const correctOptionIds = correctOptions.map((opt) => opt.id)
 
       if (Array.isArray(studentAnswer)) {
         // Multiple choice - check if arrays match
@@ -118,7 +132,7 @@ export async function submitQuestAttempt(
         .from('courses')
         .select('difficulty')
         .eq('id', quest.course_id)
-        .single()
+        .maybeSingle()
 
       if (course?.difficulty === 'intermediate') {
         pointsToAward = 150

@@ -3,6 +3,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   // Check for Supabase auth cookies instead of making API calls
   // This avoids DNS/network issues in Netlify edge functions
+  // NOTE: This is a lightweight UX check only. Real authorization happens via:
+  // 1. Server-side session validation in page components
+  // 2. Supabase Row Level Security (RLS) policies on database
+  // Cookies are validated when actual data fetches occur, not in middleware
   const accessToken = request.cookies.get('sb-access-token')
   const refreshToken = request.cookies.get('sb-refresh-token')
 
