@@ -144,9 +144,11 @@ Course
 - Encourage practice
 
 ### Ideal Lesson Length
-- **Short lessons:** 8-15 minutes (single concept)
+- **Short lessons:** 10-15 minutes (single concept)
 - **Medium lessons:** 15-25 minutes (multi-step process)
 - **Long lessons:** 25-35 minutes (complex topic with demo)
+
+**Recommended range: 10-20 minutes** for optimal engagement and retention.
 
 **Avoid lessons over 40 minutes** - split into multiple parts instead.
 
@@ -156,13 +158,15 @@ Course
 
 ### The Learning Pyramid
 
-**Retention Rates:**
+**Approximate Retention Rates:**
 - Lecture: 5%
 - Reading: 10%
 - Audio-Visual: 20%
 - Demonstration: 30%
 - Practice: 75%
 - Teaching Others: 90%
+
+> **Note:** These percentages come from the "Learning Pyramid" often attributed to NTL Institute. While the exact numbers are debated in educational research, the core principle is well-supported: **active learning (practice, discussion, teaching) leads to better retention than passive learning (reading, listening)**. Use this as a general guide, not exact science.
 
 **Application:** Combine methods for maximum retention!
 
@@ -607,9 +611,9 @@ and platform are not responsible for misuse of this information.
 ## Getting Help
 
 **Questions?** Contact us:
-- Mentor Forum: (link to forum)
-- Email: mentors@cybersecacademy.com
-- Discord: CyberSec Academy Mentors channel
+- GitHub Issues: [Report an Issue](https://github.com/n4igme/relearning/issues)
+- Email: support@cybersecacademy.com
+- Platform Admin: Contact via the admin dashboard
 
 **Need Technical Help?**
 - Video upload issues

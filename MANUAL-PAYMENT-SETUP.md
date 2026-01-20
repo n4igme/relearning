@@ -376,6 +376,104 @@ To implement, add email sending logic in:
 - WhatsApp notifications
 - Eventually, upgrade to Midtrans or Xendit
 
+## Payment System Coexistence
+
+### How Stripe and Manual Payments Work Together
+
+Both payment systems can operate simultaneously:
+
+| Aspect | Stripe | Manual Payment |
+|--------|--------|----------------|
+| **Trigger** | "Pay with Card" button | "Bank Transfer" option |
+| **Processing** | Instant (automated) | Manual (admin approval) |
+| **Enrollment** | Automatic via webhook | Automatic after approval |
+| **Database Tables** | `payments` table | `enrollment_requests` table |
+| **Best For** | International cards, instant access | Local bank transfers, no fees |
+
+### Configuration Options
+
+1. **Both enabled (default):** Students choose their preferred method
+2. **Stripe only:** Set manual payment option to hidden in UI
+3. **Manual only:** Don't configure Stripe keys in environment
+
+### Student Experience
+
+When both are enabled, students see:
+1. Course enrollment page shows price
+2. Two payment options:
+   - "Pay with Card" → Stripe checkout
+   - "Bank Transfer" → Manual payment form
+3. Students can choose based on preference
+
+---
+
+## Audit Trail & Record Keeping
+
+### Records Maintained
+
+**For Stripe Payments (`payments` table):**
+- `id` - Unique payment ID
+- `student_id` - Who paid
+- `course_id` - What course
+- `amount` - Payment amount
+- `currency` - Payment currency
+- `status` - pending, completed, failed, refunded
+- `stripe_session_id` - Stripe checkout session
+- `stripe_payment_intent_id` - Payment intent for refunds
+- `created_at`, `updated_at` - Timestamps
+
+**For Manual Payments (`enrollment_requests` table):**
+- `id` - Request ID
+- `student_id`, `course_id` - Who and what
+- `amount_paid` - Claimed amount
+- `bank_name` - Bank used
+- `payment_date` - When they paid
+- `transaction_reference` - Bank reference number
+- `payment_proof_url` - Screenshot/receipt image
+- `status` - pending, approved, rejected
+- `admin_notes` - Admin comments
+- `reviewed_by` - Admin who processed
+- `reviewed_at` - When processed
+
+### Audit Queries
+
+```sql
+-- All successful enrollments with payment method
+SELECT
+    e.id as enrollment_id,
+    p.email,
+    c.title as course,
+    CASE
+        WHEN pay.id IS NOT NULL THEN 'Stripe'
+        WHEN er.id IS NOT NULL THEN 'Manual'
+        ELSE 'Free'
+    END as payment_method,
+    e.enrolled_at
+FROM enrollments e
+JOIN profiles p ON e.student_id = p.id
+JOIN courses c ON e.course_id = c.id
+LEFT JOIN payments pay ON e.student_id = pay.student_id AND e.course_id = pay.course_id
+LEFT JOIN enrollment_requests er ON e.student_id = er.student_id AND e.course_id = er.course_id
+ORDER BY e.enrolled_at DESC;
+
+-- Revenue by payment method
+SELECT
+    CASE WHEN stripe_session_id IS NOT NULL THEN 'Stripe' ELSE 'Manual' END as method,
+    COUNT(*) as transactions,
+    SUM(amount) as total_revenue
+FROM payments
+WHERE status = 'completed'
+GROUP BY method;
+
+-- Manual payment processing time (average)
+SELECT
+    AVG(EXTRACT(EPOCH FROM (reviewed_at - created_at))/3600) as avg_hours_to_process
+FROM enrollment_requests
+WHERE status = 'approved';
+```
+
+---
+
 ## Comparison: Manual vs Automated
 
 ### Manual Payment (Current)
@@ -450,7 +548,7 @@ Add a link to admin menu/sidebar:
 
 ---
 
-**Created:** December 2025
+**Created:** January 2026
 **System:** Manual Payment Confirmation
 **Status:** ✅ Ready to Use
 **Cost:** FREE (no transaction fees!)

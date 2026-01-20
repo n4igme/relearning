@@ -86,10 +86,12 @@ By the end of this course, you will be able to:
   2. Scanning & Enumeration
   3. Gaining Access (Exploitation)
   4. Maintaining Access
-  5. Covering Tracks
+  5. Covering Tracks*
 - OWASP Testing Guide overview
 - PTES (Penetration Testing Execution Standard)
 - Report writing fundamentals
+
+> **Note on "Covering Tracks":** This phase is taught to help you understand how malicious attackers operate and what artifacts they may try to hide. **As an ethical penetration tester, you should NEVER cover your tracks.** Instead, you must document all actions thoroughly for your report and maintain a complete audit trail. Understanding this phase helps defenders know what to look for during incident response.
 
 #### Lesson 1.5: Setting Up Your Lab Environment (15 min)
 - Virtual machine basics (VirtualBox/VMware)
@@ -109,7 +111,11 @@ By the end of this course, you will be able to:
 3. What is the first phase of penetration testing?
 4. True/False: It's acceptable to test a website if you discover a vulnerability.
 5. What does OWASP stand for?
-6. [More questions...]
+6. Which document defines the scope and boundaries of a penetration test?
+7. What is the purpose of a Non-Disclosure Agreement (NDA) in security testing?
+8. True/False: Script kiddies typically understand the underlying code of the tools they use.
+9. What is the primary difference between a penetration test and a vulnerability assessment?
+10. Which penetration testing methodology framework is maintained by PTES?
 
 ---
 
@@ -434,14 +440,23 @@ find / -name "*.txt" 2>/dev/null
 - **Important:** Only in authorized penetration tests
 - Cleanup after testing
 
-#### Lesson 5.3: Covering Tracks (12 min)
-- Log deletion (not recommended in real pentests)
-- Understanding /var/log/
-- Timestomping
-- Why pentesters should NOT cover tracks
+#### Lesson 5.3: Understanding How Attackers Cover Tracks (12 min)
+- Log deletion techniques (understanding attacker behavior)
+- Understanding /var/log/ and common log locations
+- Timestomping and file manipulation
 - Difference between pentesting and real attacks
 
-**Ethical Note:** In legitimate penetration testing, you should document all actions, not hide them.
+> **CRITICAL ETHICAL DISTINCTION:** This lesson teaches you how attackers hide their activities so you can:
+> 1. Better detect and respond to real attacks as a defender
+> 2. Understand what artifacts to preserve during incident response
+> 3. Know what evidence to look for in forensic investigations
+>
+> **As an ethical penetration tester, you MUST:**
+> - Document every action you take
+> - Maintain detailed logs and screenshots
+> - Report all changes made to systems
+> - Help clients understand exactly what was done during the test
+> - NEVER attempt to hide your testing activities
 
 #### Lesson 5.4: Penetration Testing Report Writing (30 min)
 - Executive summary

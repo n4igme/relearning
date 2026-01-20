@@ -338,6 +338,81 @@ npm run build
 
 ---
 
+## Rollback Procedures
+
+If any fix causes issues, here's how to rollback each change:
+
+### 1. Admin RBAC on `/api/check-user` (CRITICAL)
+
+**Rollback command:**
+```bash
+git checkout HEAD~1 -- app/api/check-user/route.ts
+```
+
+**Warning:** This re-enables user enumeration vulnerability. Only rollback if endpoint is broken.
+
+### 2. CSRF Protection on `/api/checkout`
+
+**Rollback command:**
+```bash
+git checkout HEAD~1 -- app/api/checkout/route.ts
+```
+
+**Impact:** Removes origin validation. Payments still work but less secure.
+
+### 3. Input Validation in `lib/actions/auth.ts`
+
+**Rollback command:**
+```bash
+git checkout HEAD~1 -- lib/actions/auth.ts
+```
+
+**Impact:** Removes email/password validation. Users can submit invalid data.
+
+### 4. Error Message Sanitization
+
+**Rollback command:**
+```bash
+git checkout HEAD~1 -- app/auth/callback/route.ts
+```
+
+**Impact:** Detailed error messages will be visible to users again.
+
+### 5. `.maybeSingle()` Database Fixes
+
+**Rollback command:**
+```bash
+git checkout HEAD~1 -- lib/actions/payments.ts lib/actions/quests.ts
+```
+
+**Impact:** May cause runtime errors if records don't exist.
+
+### 6. Refund Logic
+
+**Rollback command:**
+```bash
+git checkout HEAD~1 -- app/api/webhooks/stripe/route.ts
+```
+
+**Impact:** Refunded users keep course access.
+
+### Full Rollback (All Changes)
+
+```bash
+# View commit history
+git log --oneline -10
+
+# Reset to commit before security fixes
+git reset --hard <commit-hash-before-fixes>
+
+# Or revert the security commit
+git revert <security-commit-hash>
+```
+
+**Note:** After any rollback, redeploy to apply changes.
+
+---
+
 ## Remaining Considerations
 
 ### Future Improvements (Not Critical)

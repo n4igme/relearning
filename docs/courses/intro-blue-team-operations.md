@@ -614,6 +614,40 @@ After completing this course, students will:
 
 ## Hands-On Labs
 
+### Lab Environment Setup
+
+Before starting the hands-on labs, set up your SIEM environment:
+
+#### Option A: Splunk Free (Recommended for Beginners)
+1. Download Splunk Free: https://www.splunk.com/en_us/download/splunk-enterprise.html
+2. Install on Windows/Linux/Mac
+3. Access at http://localhost:8000
+4. Import sample security logs from BOTS (Boss of the SOC) dataset
+5. **Free Limit:** 500MB/day indexing
+
+#### Option B: ELK Stack (Elasticsearch, Logstash, Kibana)
+1. Install Docker Desktop
+2. Run ELK stack:
+```bash
+docker pull sebp/elk
+docker run -p 5601:5601 -p 9200:9200 -p 5044:5044 -it --name elk sebp/elk
+```
+3. Access Kibana at http://localhost:5601
+4. Import sample logs via Logstash
+
+#### Option C: Security Onion (Most Complete)
+1. Download Security Onion ISO: https://securityonionsolutions.com/
+2. Create VM with 8GB+ RAM, 200GB disk
+3. Follow installation wizard
+4. Includes: Zeek, Suricata, ELK, Wazuh, and more
+
+#### Sample Log Sources
+- **BOTS Dataset:** https://github.com/splunk/botsv3
+- **SecRepo:** https://www.secrepo.com/
+- **Malware Traffic Analysis:** https://malware-traffic-analysis.net/
+
+---
+
 ### Lab 1: SIEM Log Analysis
 **Objective:** Analyze logs in Splunk to identify a security incident
 **Duration:** 30 minutes

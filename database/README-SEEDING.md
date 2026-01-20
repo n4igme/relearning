@@ -5,31 +5,68 @@ This guide explains how to populate your cybersecurity e-learning platform with 
 ## Prerequisites
 
 Before running the seed scripts, ensure you have:
-1. Created the main database schema (`supabase-schema.sql`)
-2. At least one approved admin or mentor user in the system
+
+1. **Database schema created** - Run `supabase-schema.sql` first
+2. **At least one admin/mentor user** - Required for course ownership
+3. **Supabase project running** or local PostgreSQL connected
+
+**Verify prerequisites:**
+```sql
+-- Check if schema exists
+SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';
+-- Should return 20+ tables
+
+-- Check for admin/mentor user
+SELECT id, email, role FROM profiles WHERE role IN ('admin', 'mentor') AND is_approved = true;
+-- Should return at least one row
+```
+
+---
 
 ## Seeding Order
 
-Run the scripts in this exact order:
+⚠️ **IMPORTANT:** Run scripts in this EXACT order. Each step depends on the previous.
 
-### 1. Seed Skills (if not already done)
+### Step 1: Seed Skills (REQUIRED FIRST)
+
 ```sql
 -- In Supabase SQL Editor or psql
 \i database/seed-skills.sql
 ```
 
-This creates 25 cybersecurity skills across 6 categories.
+✅ Creates 25 cybersecurity skills across 6 categories.
 
-### 2. Seed Security Tools (if not already done)
+⚠️ **Warning:** If you skip this step, course-skill associations will fail.
+
+### Step 2: Seed Badges
+
+```sql
+\i database/seed-badges.sql
+```
+
+✅ Creates 15 achievement badges across 4 tiers.
+
+### Step 3: Seed Security Tools
+
 ```sql
 \i database/seed-tools.sql
 ```
 
-This creates 35+ security tools in categories like scanner, exploitation, reconnaissance, forensics, cryptography, and wireless.
+✅ Creates 35+ security tools.
 
-### 3. Seed Courses
+### Step 4: Seed Courses
+
 ```sql
 \i database/seed-courses.sql
+```
+
+⚠️ **Warning:** This script requires:
+- Skills to be seeded (Step 1)
+- At least one approved admin/mentor user
+
+If you see "No approved admin or mentor found", create one first:
+```sql
+UPDATE profiles SET role = 'admin', is_approved = true WHERE email = 'your@email.com';
 ```
 
 This creates 5 comprehensive courses:
@@ -217,6 +254,6 @@ To add more courses, you can:
 
 ---
 
-**Created:** 2025
+**Created:** January 2026
 **License:** MIT
 **Support:** For issues, check the main project README

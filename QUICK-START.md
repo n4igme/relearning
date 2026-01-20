@@ -1,5 +1,30 @@
 # Quick Start Guide
 
+Get CyberSec Academy running in minutes.
+
+## Table of Contents
+1. [Prerequisites](#prerequisites)
+2. [Local Development](#-local-development-fastest)
+3. [Staging (Docker)](#-staging-docker-with-database)
+4. [Production (Netlify)](#-production-netlify)
+5. [Common Commands](#-common-commands)
+6. [Troubleshooting](#-troubleshooting)
+
+---
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- **Node.js 20+** - [Download](https://nodejs.org/)
+- **npm** (comes with Node.js)
+- **Git** - [Download](https://git-scm.com/)
+- **Supabase account** (free tier) - [Sign up](https://supabase.com/)
+- **Cloudinary account** (optional, for video hosting) - [Sign up](https://cloudinary.com/)
+- **Docker Desktop** (only for staging) - [Download](https://www.docker.com/products/docker-desktop)
+
+---
+
 Choose your deployment method:
 
 ---
@@ -20,6 +45,8 @@ npm run dev
 ---
 
 ## 🐳 Staging (Docker with Database)
+
+> **Note:** The npm scripts below are convenient wrappers around `docker-compose` commands. For full docker-compose reference and advanced options, see [DEPLOYMENT.md](./DEPLOYMENT.md#staging-docker).
 
 **Start full environment (PostgreSQL + App):**
 

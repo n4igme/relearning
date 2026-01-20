@@ -218,6 +218,54 @@ User clicks "Start Learning"
 Access course content
 ```
 
+## Payment Failure Handling
+
+When a payment fails, the system handles it automatically:
+
+### What Happens on Failure
+
+1. **Stripe Checkout Failure:**
+   - User sees error message on Stripe's checkout page
+   - Can retry with different card
+   - Payment record remains in `pending` status
+   - No enrollment is created
+
+2. **Webhook: `payment_intent.payment_failed`:**
+   - Payment status updated to `failed` in database
+   - Error logged server-side for debugging
+   - Student is NOT enrolled
+
+3. **User Experience:**
+   - Student sees "Payment failed" message
+   - Redirected back to course page
+   - Can attempt payment again
+
+### Retry Logic
+
+- Stripe handles card retry logic automatically
+- Failed payments can be retried from the course enrollment page
+- No manual intervention needed for most failures
+- Payment records with `failed` status are kept for audit purposes
+
+### Admin Actions for Failed Payments
+
+```sql
+-- View failed payments
+SELECT p.*, c.title as course_title, prof.email
+FROM payments p
+JOIN courses c ON p.course_id = c.id
+JOIN profiles prof ON p.student_id = prof.id
+WHERE p.status = 'failed'
+ORDER BY p.created_at DESC;
+
+-- Manually mark a payment as completed (rare cases only)
+UPDATE payments
+SET status = 'completed', updated_at = NOW()
+WHERE id = 'payment-uuid';
+```
+
+---
+
 ## Common Issues & Solutions
 
 ### Issue: "Invalid signature" webhook error
@@ -360,21 +408,11 @@ If you run into issues:
 3. Check your app logs (terminal output)
 4. Check Supabase logs (if using Supabase)
 
-## Testing Credentials Summary
+## Testing Reference
 
-**Test Cards:**
-- Success: `4242 4242 4242 4242`
-- Decline: `4000 0000 0000 0002`
-- 3D Secure: `4000 0025 0000 3155`
-
-**All test cards:**
-- Expiry: Any future date
-- CVC: Any 3 digits
-- ZIP: Any 5 digits
-
-Full list: https://stripe.com/docs/testing
+For a complete list of Stripe test cards, see: https://stripe.com/docs/testing
 
 ---
 
-**Created:** December 2025
+**Created:** January 2026
 **Status:** ✅ Ready for Testing

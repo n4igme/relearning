@@ -32,20 +32,20 @@ Learn to think like an attacker to better protect systems. This path teaches eth
 
 ### Recommended Course Progression
 
-**Beginner Level:**
-1. Introduction to Ethical Hacking
-2. Web Application Security Fundamentals
-3. Network Reconnaissance & Scanning
+**Beginner Level:** (~30-40 hours total)
+1. Introduction to Ethical Hacking (10-15 hours)
+2. Web Application Security Fundamentals (10-12 hours)
+3. Network Reconnaissance & Scanning (8-10 hours)
 
-**Intermediate Level:**
-1. Web Application Penetration Testing
-2. Network Penetration Testing
-3. Wireless Security Assessment
+**Intermediate Level:** (~50-60 hours total)
+1. Web Application Penetration Testing (15-20 hours)
+2. Network Penetration Testing (15-20 hours)
+3. Wireless Security Assessment (12-15 hours)
 
-**Advanced Level:**
-1. Advanced Exploitation Techniques
-2. Reverse Engineering & Binary Analysis
-3. Malware Development for Red Teams
+**Advanced Level:** (~60-80 hours total)
+1. Advanced Exploitation Techniques (20-25 hours)
+2. Reverse Engineering & Binary Analysis (20-25 hours)
+3. Malware Development for Red Teams (20-25 hours)
 
 ---
 
@@ -70,20 +70,20 @@ Learn to defend systems, detect threats, and respond to security incidents. This
 
 ### Recommended Course Progression
 
-**Beginner Level:**
-1. Introduction to Blue Team Operations
-2. Network Security Fundamentals
-3. Security Monitoring Basics
+**Beginner Level:** (~30-40 hours total)
+1. Introduction to Blue Team Operations (10-15 hours)
+2. Network Security Fundamentals (10-12 hours)
+3. Security Monitoring Basics (8-10 hours)
 
-**Intermediate Level:**
-1. Security Operations Center (SOC) Analyst
-2. Threat Detection & Analysis
-3. Cloud Security Fundamentals
+**Intermediate Level:** (~50-60 hours total)
+1. Security Operations Center (SOC) Analyst (15-20 hours)
+2. Threat Detection & Analysis (15-18 hours)
+3. Cloud Security Fundamentals (12-15 hours)
 
-**Advanced Level:**
-1. Incident Response & Forensics
-2. Advanced Threat Hunting
-3. Security Architecture & Design
+**Advanced Level:** (~60-80 hours total)
+1. Incident Response & Forensics (20-25 hours)
+2. Advanced Threat Hunting (20-25 hours)
+3. Security Architecture & Design (20-25 hours)
 
 ---
 
@@ -209,4 +209,4 @@ If you're unsure which path to start with:
 
 **Ready to start your cybersecurity journey?**
 
-👉 [Browse Courses](/courses) | [View Skills](/skills) | [Join Community](#)
+👉 [Browse Courses](/courses) | [View Skills](/skills) | [Leaderboard](/leaderboard)

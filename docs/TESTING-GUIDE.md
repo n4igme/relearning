@@ -732,6 +732,94 @@ LIMIT 10;
 
 ---
 
+## 🤖 Automated/Programmatic Testing
+
+### Running Tests
+
+The project uses the following testing approaches:
+
+#### TypeScript Type Checking
+```bash
+npm run type-check
+```
+Verifies all TypeScript types are correct across the codebase.
+
+#### ESLint Code Quality
+```bash
+npm run lint
+```
+Checks code style and catches common issues.
+
+#### Build Verification
+```bash
+npm run build
+```
+Ensures the project compiles without errors. This is the primary automated test.
+
+### API Endpoint Testing
+
+Test API endpoints using curl or similar tools:
+
+```bash
+# Test public health (replace localhost with your URL)
+curl -I http://localhost:3000/
+
+# Test protected route (should redirect to login)
+curl -I http://localhost:3000/dashboard
+
+# Test API endpoint (requires auth cookie)
+curl http://localhost:3000/api/check-user?email=test@test.com \
+  -H "Cookie: your-auth-cookie"
+```
+
+### Database Testing
+
+```sql
+-- Verify tables exist
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+ORDER BY table_name;
+
+-- Check row counts
+SELECT 'profiles' as table_name, COUNT(*) as rows FROM profiles
+UNION ALL
+SELECT 'courses', COUNT(*) FROM courses
+UNION ALL
+SELECT 'enrollments', COUNT(*) FROM enrollments
+UNION ALL
+SELECT 'quests', COUNT(*) FROM quests;
+
+-- Check RLS policies
+SELECT tablename, policyname, cmd
+FROM pg_policies
+WHERE schemaname = 'public'
+ORDER BY tablename;
+```
+
+### CI/CD Integration
+
+For GitHub Actions or similar CI/CD:
+
+```yaml
+# .github/workflows/test.yml
+name: Test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm run build
+```
+
+---
+
 ## 📊 Testing Summary
 
 ### Critical Tests (Must Pass)

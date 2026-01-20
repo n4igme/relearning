@@ -59,6 +59,36 @@ Points are automatically awarded when calling:
 - Internal `completeCourse()` - When student finishes all course materials
 - `awardPoints()` - Direct point award (admin use)
 
+### Point Decay Policy
+
+**Points do NOT decay over time.** Once earned, points are permanent. This design decision:
+- Encourages long-term engagement without penalizing breaks
+- Simplifies the system for students
+- Maintains motivation without creating anxiety about losing progress
+
+### Admin Manual Point Awards
+
+Admins can manually award points for special circumstances:
+
+```typescript
+import { awardPoints } from '@/lib/actions/gamification'
+
+// Award 500 bonus points for a special achievement
+await awardPoints(
+  studentId,     // UUID of the student
+  500,           // Number of points
+  'skill',       // Source type: 'quest' | 'course' | 'skill' | 'streak'
+  'reason-id'    // Optional: reference ID for audit trail
+)
+```
+
+**Common use cases:**
+- Competition winners
+- Bug bounty contributions
+- Community contributions
+- Special event participation
+- Correcting point calculation errors
+
 ---
 
 ## Badges & Achievements

@@ -44,3 +44,15 @@ next-env.d.ts
 
 # Old files
 uploads/
+
+# Claude Code temporary files
+tmpclaude-*-cwd
+
+# Local Claude settings
+.claude/settings.local.json
+
+# Windows artifacts
+nul
+
+# Build logs
+build.log
