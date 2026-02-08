@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
 import { enrollInCourse } from './courses'
 
 export interface EnrollmentRequest {
@@ -43,8 +42,7 @@ export async function createEnrollmentRequest(data: {
   paymentReference?: string
   studentNotes?: string
 }) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Get current user
   const {
@@ -133,8 +131,7 @@ export async function createEnrollmentRequest(data: {
  * Get all enrollment requests (admin only)
  */
 export async function getAllEnrollmentRequests(status?: 'pending' | 'approved' | 'rejected') {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Get current user
   const {
@@ -207,8 +204,7 @@ export async function getAllEnrollmentRequests(status?: 'pending' | 'approved' |
  * Get student's own enrollment requests
  */
 export async function getMyEnrollmentRequests() {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Get current user
   const {
@@ -255,8 +251,7 @@ export async function getMyEnrollmentRequests() {
  * Approve enrollment request (admin only)
  */
 export async function approveEnrollmentRequest(requestId: string, adminNotes?: string) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Get current user
   const {
@@ -340,8 +335,7 @@ export async function approveEnrollmentRequest(requestId: string, adminNotes?: s
  * Reject enrollment request (admin only)
  */
 export async function rejectEnrollmentRequest(requestId: string, adminNotes: string) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Get current user
   const {
@@ -407,8 +401,7 @@ export async function rejectEnrollmentRequest(requestId: string, adminNotes: str
  * Get enrollment request by ID
  */
 export async function getEnrollmentRequestById(requestId: string) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const {
     data: { user },

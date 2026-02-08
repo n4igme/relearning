@@ -1,4 +1,4 @@
-import { getUserProfile, signOut } from '@/lib/actions/auth'
+import { getUserProfile, getUser, signOut } from '@/lib/actions/auth'
 import { getStudentEnrollments, getMentorCourses } from '@/lib/actions/courses'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,12 +8,69 @@ import { SkillProgress } from '@/components/skill-progress'
 import { Leaderboard } from '@/components/leaderboard'
 import { BadgesShowcase } from '@/components/badges-showcase'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function DashboardPage() {
-  const profile = await getUserProfile()
+  const user = await getUser()
+  
+  // If no authenticated user, redirect to login
+  if (!user) {
+    redirect('/login')
+  }
+
+  let profile = await getUserProfile()
+
+  // If user exists but profile doesn't, create it
+  if (!profile) {
+    const supabase = await createClient()
+    const { data: newProfile, error } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        email: user.email!,
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        role: user.user_metadata?.role || 'student',
+        is_approved: true,
+        is_active: true,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Failed to create profile:', error)
+      // Show error page instead of redirect loop
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-red-600">Profile Setup Error</CardTitle>
+              <CardDescription>
+                We couldn't set up your profile. Please try signing out and signing in again.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form action={signOut}>
+                <Button type="submit" className="w-full">Sign Out</Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    profile = newProfile
+  }
 
   if (!profile) {
-    redirect('/login')
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    )
   }
 
   // Fetch enrolled courses for students
