@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
 
 export interface PaymentRecord {
   id: string
@@ -32,8 +31,7 @@ export async function createPayment({
   currency?: string
   stripeSessionId?: string
 }) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('payments')
@@ -68,21 +66,22 @@ export async function updatePaymentStatus({
   status: 'pending' | 'completed' | 'failed' | 'refunded'
   sessionId?: string
 }) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  if (!paymentIntentId && !sessionId) {
+    throw new Error('Either paymentIntentId or sessionId must be provided')
+  }
+
+  const supabase = await createClient()
 
   // Find payment by either payment intent ID or session ID
-  let query = supabase.from('payments')
+  let query = supabase.from('payments').select()
 
   if (paymentIntentId) {
     query = query.eq('stripe_payment_intent_id', paymentIntentId)
   } else if (sessionId) {
     query = query.eq('stripe_session_id', sessionId)
-  } else {
-    throw new Error('Either paymentIntentId or sessionId must be provided')
   }
 
-  const { data: existingPayment, error: findError } = await query.select().maybeSingle()
+  const { data: existingPayment, error: findError } = await query.maybeSingle()
 
   if (findError || !existingPayment) {
     console.error('Payment not found:', findError)
@@ -122,8 +121,7 @@ export async function updatePaymentStatus({
  * Get payment by session ID
  */
 export async function getPaymentBySessionId(sessionId: string) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('payments')
@@ -143,8 +141,7 @@ export async function getPaymentBySessionId(sessionId: string) {
  * Get payment by payment intent ID
  */
 export async function getPaymentByIntentId(paymentIntentId: string) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('payments')
@@ -164,8 +161,7 @@ export async function getPaymentByIntentId(paymentIntentId: string) {
  * Check if student has paid for a course
  */
 export async function hasStudentPaidForCourse(studentId: string, courseId: string) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('payments')
@@ -186,8 +182,7 @@ export async function hasStudentPaidForCourse(studentId: string, courseId: strin
  * Get all payments for a student
  */
 export async function getStudentPayments(studentId: string) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('payments')
@@ -214,8 +209,7 @@ export async function getStudentPayments(studentId: string) {
  * Get all payments for a course (for instructors/admins)
  */
 export async function getCoursePayments(courseId: string) {
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('payments')
