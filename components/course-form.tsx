@@ -63,7 +63,10 @@ export function CourseForm({ instructorId, course }: CourseFormProps) {
       if (result.success && result.data) {
         router.push(`/mentor/courses/${result.data.id}`)
       } else {
-        alert(result.error || 'Failed to save course')
+        const errorMsg = typeof result.error === 'string' 
+          ? result.error 
+          : (result.error as any)?.message || 'Failed to save course'
+        alert(errorMsg)
       }
     } catch (error) {
       console.error('Error saving course:', error)

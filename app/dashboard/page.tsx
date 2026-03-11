@@ -404,12 +404,27 @@ export default async function DashboardPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Total Courses</CardTitle>
-                  <CardDescription>Platform content</CardDescription>
+                  <CardTitle>Enrollment Requests</CardTitle>
+                  <CardDescription>Manage enrollment requests</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold">-</p>
-                  <p className="text-sm text-gray-500 mt-2">Published courses</p>
+                  <p className="text-gray-500 mb-4">Review pending enrollment requests</p>
+                  <a href="/admin/enrollment-requests">
+                    <Button>View Requests</Button>
+                  </a>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Course Management</CardTitle>
+                  <CardDescription>Approve and manage courses</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-500 mb-4">Review and approve courses from mentors</p>
+                  <a href="/admin/courses">
+                    <Button>Manage Courses</Button>
+                  </a>
                 </CardContent>
               </Card>
             </>

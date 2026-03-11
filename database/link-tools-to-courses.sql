@@ -11,6 +11,8 @@ DECLARE
     v_pentest_id UUID;
     v_crypto_id UUID;
     v_exploit_dev_id UUID;
+    v_eth_hack_id UUID;
+    v_blue_team_id UUID;
 BEGIN
     -- Get course IDs by slug
     SELECT id INTO v_web_app_sec_id FROM public.courses WHERE slug = 'web-app-security-fundamentals';
@@ -18,6 +20,8 @@ BEGIN
     SELECT id INTO v_pentest_id FROM public.courses WHERE slug = 'professional-penetration-testing';
     SELECT id INTO v_crypto_id FROM public.courses WHERE slug = 'applied-cryptography';
     SELECT id INTO v_exploit_dev_id FROM public.courses WHERE slug = 'exploit-development';
+    SELECT id INTO v_eth_hack_id FROM public.courses WHERE slug = 'intro-ethical-hacking';
+    SELECT id INTO v_blue_team_id FROM public.courses WHERE slug = 'intro-blue-team-operations';
 
     -- Verify courses exist
     IF v_web_app_sec_id IS NULL THEN
@@ -233,6 +237,62 @@ BEGIN
     WHERE name = 'ROPgadget';
 
     -- =====================================================
+    -- ETHICAL HACKING COURSE TOOLS
+    -- =====================================================
+
+    -- Nmap - also relevant to ethical hacking
+    UPDATE public.security_tools
+    SET related_course_ids = array_cat(related_course_ids, ARRAY[v_eth_hack_id])
+    WHERE name = 'Nmap'
+    AND (related_course_ids IS NULL OR NOT (v_eth_hack_id = ANY(related_course_ids)));
+
+    -- Metasploit - also relevant to ethical hacking
+    UPDATE public.security_tools
+    SET related_course_ids = array_cat(related_course_ids, ARRAY[v_eth_hack_id])
+    WHERE name = 'Metasploit Framework'
+    AND (related_course_ids IS NULL OR NOT (v_eth_hack_id = ANY(related_course_ids)));
+
+    -- Burp Suite - also relevant to ethical hacking
+    UPDATE public.security_tools
+    SET related_course_ids = array_cat(related_course_ids, ARRAY[v_eth_hack_id])
+    WHERE name = 'Burp Suite Professional'
+    AND (related_course_ids IS NULL OR NOT (v_eth_hack_id = ANY(related_course_ids)));
+
+    -- Nikto - also relevant to ethical hacking
+    UPDATE public.security_tools
+    SET related_course_ids = array_cat(related_course_ids, ARRAY[v_eth_hack_id])
+    WHERE name = 'Nikto'
+    AND (related_course_ids IS NULL OR NOT (v_eth_hack_id = ANY(related_course_ids)));
+
+    -- =====================================================
+    -- BLUE TEAM COURSE TOOLS
+    -- =====================================================
+
+    -- Wireshark - also relevant to blue team
+    UPDATE public.security_tools
+    SET related_course_ids = array_cat(related_course_ids, ARRAY[v_blue_team_id])
+    WHERE name = 'Wireshark'
+    AND (related_course_ids IS NULL OR NOT (v_blue_team_id = ANY(related_course_ids)));
+
+    -- tcpdump - also relevant to blue team
+    UPDATE public.security_tools
+    SET related_course_ids = array_cat(related_course_ids, ARRAY[v_blue_team_id])
+    WHERE name = 'tcpdump'
+    AND (related_course_ids IS NULL OR NOT (v_blue_team_id = ANY(related_course_ids)));
+
+    -- Volatility - also relevant to blue team
+    UPDATE public.security_tools
+    SET related_course_ids = array_cat(related_course_ids, ARRAY[v_blue_team_id])
+    WHERE name = 'Volatility'
+    AND (related_course_ids IS NULL OR NOT (v_blue_team_id = ANY(related_course_ids)));
+
+    -- Autopsy - also relevant to blue team
+    UPDATE public.security_tools
+    SET related_course_ids = array_cat(related_course_ids, ARRAY[v_blue_team_id])
+    WHERE name = 'Autopsy'
+    AND (related_course_ids IS NULL OR NOT (v_blue_team_id = ANY(related_course_ids)));
+
+    -- =====================================================
     -- SUCCESS MESSAGE
     -- =====================================================
 
@@ -245,6 +305,8 @@ BEGIN
     RAISE NOTICE '  - Penetration Testing: %', v_pentest_id;
     RAISE NOTICE '  - Cryptography: %', v_crypto_id;
     RAISE NOTICE '  - Exploit Development: %', v_exploit_dev_id;
+    RAISE NOTICE '  - Ethical Hacking: %', v_eth_hack_id;
+    RAISE NOTICE '  - Blue Team Operations: %', v_blue_team_id;
     RAISE NOTICE '========================================';
 
 END $$;

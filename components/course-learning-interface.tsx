@@ -226,56 +226,56 @@ export function CourseLearningInterface({
               {/* Content */}
               <Card className="mb-6">
                 <CardContent className="p-0">
-                  {currentLesson.content_type === 'video' && (
+                  {/* Video content */}
+                  {(currentLesson.video_url || currentLesson.cloudinary_public_id) && (
                     <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                      {currentLesson.content_url ? (
+                      {currentLesson.video_url ? (
                         <video
-                          src={currentLesson.content_url}
+                          src={currentLesson.video_url}
                           controls
                           className="w-full h-full"
                           controlsList="nodownload"
                         >
                           Your browser does not support the video tag.
                         </video>
-                      ) : currentLesson.cloudinary_public_id ? (
-                        <div className="flex items-center justify-center h-full text-white">
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-white">
                           <p>Cloudinary video player integration coming soon</p>
                           <p className="text-sm text-gray-400 mt-2">
                             Video ID: {currentLesson.cloudinary_public_id}
                           </p>
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-white">
-                          <p>No video content available</p>
-                        </div>
                       )}
                     </div>
                   )}
 
-                  {currentLesson.content_type === 'document' && (
+                  {/* Document link */}
+                  {currentLesson.document_url && (
                     <div className="p-8 text-center">
-                      {currentLesson.content_url ? (
-                        <div>
-                          <p className="mb-4">Document: {currentLesson.title}</p>
-                          <a
-                            href={currentLesson.content_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Button>Open Document</Button>
-                          </a>
-                        </div>
-                      ) : (
-                        <p className="text-gray-500">No document available</p>
-                      )}
+                      <p className="mb-4">Document: {currentLesson.title}</p>
+                      <a
+                        href={currentLesson.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button>Open Document</Button>
+                      </a>
                     </div>
                   )}
 
-                  {currentLesson.content_type === 'text' && (
-                    <div className="p-8">
-                      <p className="text-gray-600">
-                        Text content for this lesson will be displayed here.
-                      </p>
+                  {/* Text content */}
+                  {currentLesson.content && (
+                    <div className="p-8 prose prose-gray dark:prose-invert max-w-none">
+                      <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {currentLesson.content}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No content fallback */}
+                  {!currentLesson.content && !currentLesson.video_url && !currentLesson.cloudinary_public_id && !currentLesson.document_url && (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">No content available for this lesson yet.</p>
                     </div>
                   )}
                 </CardContent>
