@@ -76,6 +76,11 @@ export function CourseQuizzes({ course }: CourseQuizzesProps) {
     const result = await getAllCourseQuests(course.id)
     if (result.success && result.data) {
       setQuests(result.data)
+      // Update selectedQuest with fresh data
+      if (selectedQuest) {
+        const updated = result.data.find((q: Quest) => q.id === selectedQuest.id)
+        if (updated) setSelectedQuest(updated)
+      }
     }
   }
 

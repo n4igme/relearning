@@ -532,9 +532,17 @@ export async function createCourse(instructorId: string, courseData: {
   const supabase = await createClient()
 
   try {
+    // Generate slug from title
+    const baseSlug = courseData.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+    const slug = `${baseSlug}-${Date.now().toString(36)}`
+
     const newCourse: Database['public']['Tables']['courses']['Insert'] = {
       instructor_id: instructorId,
       title: courseData.title,
+      slug,
       description: courseData.description,
       thumbnail_url: courseData.thumbnail_url,
       difficulty: courseData.difficulty,
@@ -708,12 +716,14 @@ export async function deleteMaterial(materialId: string) {
  */
 export async function createSubMaterial(materialId: string, subMaterialData: {
   title: string
-  description?: string
-  content_type: 'video' | 'document' | 'text'
-  content_url?: string
+  content?: string
+  video_url?: string
+  document_url?: string
   cloudinary_public_id?: string
+  cloudinary_file_id?: string
   video_duration?: number
   order_index: number
+  is_preview?: boolean
 }) {
   const supabase = await createClient()
 
@@ -721,12 +731,14 @@ export async function createSubMaterial(materialId: string, subMaterialData: {
     const newSubMaterial: Database['public']['Tables']['sub_materials']['Insert'] = {
       material_id: materialId,
       title: subMaterialData.title,
-      description: subMaterialData.description,
-      content_type: subMaterialData.content_type,
-      content_url: subMaterialData.content_url,
+      content: subMaterialData.content,
+      video_url: subMaterialData.video_url,
+      document_url: subMaterialData.document_url,
       cloudinary_public_id: subMaterialData.cloudinary_public_id,
+      cloudinary_file_id: subMaterialData.cloudinary_file_id,
       video_duration: subMaterialData.video_duration,
       order_index: subMaterialData.order_index,
+      is_preview: subMaterialData.is_preview ?? false,
     }
 
     const { data, error } = await supabase
@@ -749,12 +761,14 @@ export async function createSubMaterial(materialId: string, subMaterialData: {
  */
 export async function updateSubMaterial(subMaterialId: string, subMaterialData: Partial<{
   title: string
-  description: string
-  content_type: 'video' | 'document' | 'text'
-  content_url: string
+  content: string
+  video_url: string
+  document_url: string
   cloudinary_public_id: string
+  cloudinary_file_id: string
   video_duration: number
   order_index: number
+  is_preview: boolean
 }>) {
   const supabase = await createClient()
 
@@ -792,6 +806,56 @@ export async function deleteSubMaterial(subMaterialId: string) {
     return { success: true }
   } catch (error) {
     console.error('Error deleting sub-material:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Get all courses for admin (includes unpublished/unapproved)
+ */
+export async function getAllCoursesAdmin() {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .select(`
+        *,
+        profiles:instructor_id (
+          full_name,
+          email
+        )
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error fetching all courses:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Approve or reject a course (admin only)
+ */
+export async function approveCourse(courseId: string, approved: boolean) {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .update({ is_approved: approved, updated_at: new Date().toISOString() })
+      .eq('id', courseId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error approving course:', error)
     return { success: false, error }
   }
 }

@@ -664,7 +664,19 @@ export async function getAllCourseQuests(courseId: string) {
       .from('quests')
       .select(`
         *,
-        quest_questions (id)
+        quest_questions (
+          id,
+          question_text,
+          question_type,
+          points,
+          order_index,
+          quest_options (
+            id,
+            option_text,
+            is_correct,
+            order_index
+          )
+        )
       `)
       .eq('course_id', courseId)
       .order('created_at', { ascending: true })

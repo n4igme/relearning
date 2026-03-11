@@ -310,13 +310,21 @@ function SubMaterialForm({
   onCancel: () => void
   onSuccess: () => void
 }) {
+  const [contentMode, setContentMode] = useState<'video' | 'document' | 'text'>(
+    subMaterial?.video_url || subMaterial?.cloudinary_public_id
+      ? 'video'
+      : subMaterial?.document_url
+        ? 'document'
+        : 'text'
+  )
   const [formData, setFormData] = useState({
     title: subMaterial?.title || '',
-    description: subMaterial?.description || '',
-    content_type: subMaterial?.content_type || 'video',
-    content_url: subMaterial?.content_url || '',
+    content: subMaterial?.content || '',
+    video_url: subMaterial?.video_url || '',
+    document_url: subMaterial?.document_url || '',
     cloudinary_public_id: subMaterial?.cloudinary_public_id || '',
     video_duration: subMaterial?.video_duration || 0,
+    is_preview: subMaterial?.is_preview || false,
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -325,17 +333,30 @@ function SubMaterialForm({
     setIsSubmitting(true)
 
     try {
+      const submitData = {
+        title: formData.title,
+        content: formData.content || undefined,
+        video_url: contentMode === 'video' ? formData.video_url || undefined : undefined,
+        document_url: contentMode === 'document' ? formData.document_url || undefined : undefined,
+        cloudinary_public_id: contentMode === 'video' ? formData.cloudinary_public_id || undefined : undefined,
+        video_duration: contentMode === 'video' ? formData.video_duration || undefined : undefined,
+        is_preview: formData.is_preview,
+      }
+
       let result
       if (subMaterial) {
-        result = await updateSubMaterial(subMaterial.id, formData)
+        result = await updateSubMaterial(subMaterial.id, submitData)
       } else {
-        result = await createSubMaterial(materialId, { ...formData, order_index: orderIndex })
+        result = await createSubMaterial(materialId, { ...submitData, order_index: orderIndex })
       }
 
       if (result.success) {
         onSuccess()
       } else {
-        alert(result.error || 'Failed to save lesson')
+        const errorMsg = typeof result.error === 'string'
+          ? result.error
+          : (result.error as any)?.message || 'Failed to save lesson'
+        alert(errorMsg)
       }
     } catch (error) {
       console.error('Error saving sub-material:', error)
@@ -358,30 +379,30 @@ function SubMaterialForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Input
-          id="description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Brief description..."
+        <Label htmlFor="content">Text Content</Label>
+        <textarea
+          id="content"
+          value={formData.content}
+          onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+          placeholder="Lesson text content..."
+          className="w-full min-h-[120px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="content_type">Content Type *</Label>
+          <Label htmlFor="content_mode">Content Type</Label>
           <select
-            id="content_type"
-            value={formData.content_type}
-            onChange={(e) => setFormData({ ...formData, content_type: e.target.value as any })}
+            id="content_mode"
+            value={contentMode}
+            onChange={(e) => setContentMode(e.target.value as any)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            required
           >
+            <option value="text">Text Only</option>
             <option value="video">Video</option>
             <option value="document">Document</option>
-            <option value="text">Text</option>
           </select>
         </div>
-        {formData.content_type === 'video' && (
+        {contentMode === 'video' && (
           <div className="space-y-2">
             <Label htmlFor="video_duration">Duration (seconds)</Label>
             <Input
@@ -396,28 +417,52 @@ function SubMaterialForm({
           </div>
         )}
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="content_url">Content URL</Label>
-        <Input
-          id="content_url"
-          type="url"
-          value={formData.content_url}
-          onChange={(e) => setFormData({ ...formData, content_url: e.target.value })}
-          placeholder="https://example.com/video.mp4"
-        />
-      </div>
-      {formData.content_type === 'video' && (
+      {contentMode === 'video' && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="video_url">Video URL</Label>
+            <Input
+              id="video_url"
+              type="url"
+              value={formData.video_url}
+              onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+              placeholder="https://example.com/video.mp4"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cloudinary_public_id">Cloudinary Public ID</Label>
+            <Input
+              id="cloudinary_public_id"
+              value={formData.cloudinary_public_id}
+              onChange={(e) => setFormData({ ...formData, cloudinary_public_id: e.target.value })}
+              placeholder="folder/video_id"
+            />
+            <p className="text-xs text-gray-500">For Cloudinary-hosted videos</p>
+          </div>
+        </>
+      )}
+      {contentMode === 'document' && (
         <div className="space-y-2">
-          <Label htmlFor="cloudinary_public_id">Cloudinary Public ID</Label>
+          <Label htmlFor="document_url">Document URL</Label>
           <Input
-            id="cloudinary_public_id"
-            value={formData.cloudinary_public_id}
-            onChange={(e) => setFormData({ ...formData, cloudinary_public_id: e.target.value })}
-            placeholder="folder/video_id"
+            id="document_url"
+            type="url"
+            value={formData.document_url}
+            onChange={(e) => setFormData({ ...formData, document_url: e.target.value })}
+            placeholder="https://example.com/document.pdf"
           />
-          <p className="text-xs text-gray-500">For Cloudinary-hosted videos</p>
         </div>
       )}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="is_preview"
+          checked={formData.is_preview}
+          onChange={(e) => setFormData({ ...formData, is_preview: e.target.checked })}
+          className="w-4 h-4"
+        />
+        <Label htmlFor="is_preview">Allow preview without enrollment</Label>
+      </div>
       <div className="flex gap-2">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : subMaterial ? 'Update' : 'Add Lesson'}
