@@ -18,6 +18,13 @@ export async function signUp(formData: FormData) {
     return { error: 'All fields are required' }
   }
 
+  // Rate limiting: 3 signups per IP-like key per hour
+  const { checkRateLimit } = await import('@/lib/rate-limit')
+  const { allowed } = await checkRateLimit(`signup:${email}`, { maxRequests: 3, windowMs: 3600_000 })
+  if (!allowed) {
+    return { error: 'Too many registration attempts. Please try again later.' }
+  }
+
   // Email format validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email)) {
@@ -68,6 +75,13 @@ export async function signIn(formData: FormData) {
     redirect('/login?error=' + encodeURIComponent('Email and password are required'))
   }
 
+  // Rate limiting: 5 attempts per email per minute
+  const { checkRateLimit } = await import('@/lib/rate-limit')
+  const { allowed } = await checkRateLimit(`login:${email}`, { maxRequests: 5, windowMs: 60_000 })
+  if (!allowed) {
+    redirect('/login?error=' + encodeURIComponent('Too many login attempts. Please wait a minute.'))
+  }
+
   // Email format validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email)) {
@@ -105,7 +119,18 @@ export async function getUser() {
   return user
 }
 
-export async function getUserProfile() {
+export async function getUserProfile(): Promise<{
+  id: string
+  email: string
+  full_name: string
+  role: string
+  avatar_url: string | null
+  bio: string | null
+  is_approved: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+} | null> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -143,4 +168,49 @@ export async function signInWithGoogle() {
   if (data.url) {
     redirect(data.url)
   }
+}
+
+export async function requestPasswordReset(formData: FormData) {
+  const supabase = await createClient()
+  const email = formData.get('email')?.toString().trim()
+
+  if (!email) {
+    redirect('/forgot-password?error=' + encodeURIComponent('Email is required'))
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
+  })
+
+  if (error) {
+    redirect('/forgot-password?error=' + encodeURIComponent('Failed to send reset email. Please try again.'))
+  }
+
+  redirect('/forgot-password?success=' + encodeURIComponent('Check your email for a password reset link.'))
+}
+
+export async function updatePassword(formData: FormData) {
+  const supabase = await createClient()
+  const password = formData.get('password')?.toString()
+  const confirmPassword = formData.get('confirmPassword')?.toString()
+
+  if (!password || !confirmPassword) {
+    redirect('/reset-password?error=' + encodeURIComponent('All fields are required'))
+  }
+
+  if (password !== confirmPassword) {
+    redirect('/reset-password?error=' + encodeURIComponent('Passwords do not match'))
+  }
+
+  if (password.length < 8) {
+    redirect('/reset-password?error=' + encodeURIComponent('Password must be at least 8 characters'))
+  }
+
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) {
+    redirect('/reset-password?error=' + encodeURIComponent('Failed to update password. Please try again.'))
+  }
+
+  redirect('/login?message=' + encodeURIComponent('Password updated successfully. Please sign in.'))
 }

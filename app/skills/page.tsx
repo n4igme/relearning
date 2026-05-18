@@ -9,8 +9,9 @@ import Link from 'next/link'
 export default async function SkillsPage({
   searchParams,
 }: {
-  searchParams: { category?: string }
+  searchParams: Promise<{ category?: string }>
 }) {
+  const { category } = await searchParams
   const profile = await getUserProfile()
 
   if (!profile) {
@@ -22,7 +23,7 @@ export default async function SkillsPage({
   }
 
   const supabase = await createClient()
-  const category = searchParams.category
+  // category is already available from destructured searchParams
 
   // Fetch student's skills
   let query = supabase

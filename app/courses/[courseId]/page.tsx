@@ -9,8 +9,9 @@ import { CourseEnrollmentButton } from '@/components/course-enrollment-button'
 export default async function CourseDetailPage({
   params,
 }: {
-  params: { courseId: string }
+  params: Promise<{ courseId: string }>
 }) {
+  const { courseId } = await params
   const profile = await getUserProfile()
 
   if (!profile) {
@@ -18,7 +19,7 @@ export default async function CourseDetailPage({
   }
 
   // Fetch course details
-  const courseResult = await getCourseById(params.courseId)
+  const courseResult = await getCourseById(courseId)
 
   if (!courseResult.success || !courseResult.data) {
     return (

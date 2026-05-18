@@ -7,9 +7,11 @@ export default async function CourseLearnPage({
   params,
   searchParams,
 }: {
-  params: { courseId: string }
-  searchParams: { lesson?: string }
+  params: Promise<{ courseId: string }>
+  searchParams: Promise<{ lesson?: string }>
 }) {
+  const { courseId } = await params
+  const { lesson } = await searchParams
   const profile = await getUserProfile()
 
   if (!profile) {
@@ -21,7 +23,7 @@ export default async function CourseLearnPage({
   }
 
   // Fetch course details
-  const courseResult = await getCourseById(params.courseId)
+  const courseResult = await getCourseById(courseId)
 
   if (!courseResult.success || !courseResult.data) {
     redirect('/courses')
@@ -32,11 +34,11 @@ export default async function CourseLearnPage({
   // Check if student is enrolled
   const enrollmentsResult = await getStudentEnrollments(profile.id)
   const enrollment = enrollmentsResult.success && enrollmentsResult.data
-    ? enrollmentsResult.data.find((e: any) => e.course_id === params.courseId)
+    ? enrollmentsResult.data.find((e: any) => e.course_id === courseId)
     : null
 
   if (!enrollment) {
-    redirect(`/courses/${params.courseId}`)
+    redirect(`/courses/${courseId}`)
   }
 
   // Get course progress
@@ -49,7 +51,7 @@ export default async function CourseLearnPage({
       enrollment={enrollment}
       progress={progressData?.progress || []}
       studentId={profile.id}
-      initialLessonId={searchParams.lesson}
+      initialLessonId={lesson}
     />
   )
 }

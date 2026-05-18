@@ -8,8 +8,9 @@ import Link from 'next/link'
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: { filter?: string }
+  searchParams: Promise<{ filter?: string }>
 }) {
+  const { filter: filterParam } = await searchParams
   const profile = await getUserProfile()
 
   if (!profile) {
@@ -21,7 +22,7 @@ export default async function LeaderboardPage({
   }
 
   const supabase = await createClient()
-  const filter = searchParams.filter || 'points'
+  const filter = filterParam || 'points'
 
   // Fetch leaderboard with profiles
   let query = supabase

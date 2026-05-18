@@ -4,8 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { Database } from '@/types/database.types'
 import { awardPoints, checkAndAwardBadges, updateStreak } from './gamification'
 import { updateSkillProficiency } from './skills'
+import { z } from 'zod'
 
 type QuestAttemptInsert = Database['public']['Tables']['quest_attempts']['Insert']
+
+const uuidSchema = z.string().uuid()
+const answersSchema = z.record(z.string(), z.union([z.string(), z.array(z.string())]))
 
 /**
  * Submit a quest attempt and calculate score
@@ -22,6 +26,14 @@ export async function submitQuestAttempt(
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.id !== studentId) {
       return { success: false, error: 'Unauthorized' }
+    }
+
+    // Validate inputs
+    if (!uuidSchema.safeParse(questId).success || !uuidSchema.safeParse(studentId).success) {
+      return { success: false, error: 'Invalid input' }
+    }
+    if (!answersSchema.safeParse(answers).success) {
+      return { success: false, error: 'Invalid answers format' }
     }
 
     // Get quest details
@@ -433,6 +445,14 @@ export async function createQuest(courseId: string, questData: {
   const supabase = await createClient()
 
   try {
+    // Verify caller owns the course
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const { data: course } = await supabase.from('courses').select('instructor_id').eq('id', courseId).single()
+    if (!course || course.instructor_id !== user.id) {
+      return { success: false, error: 'Not authorized' }
+    }
     const newQuest: Database['public']['Tables']['quests']['Insert'] = {
       course_id: courseId,
       title: questData.title,
@@ -472,6 +492,15 @@ export async function updateQuest(questId: string, questData: Partial<{
   const supabase = await createClient()
 
   try {
+    // Verify caller owns the course this quest belongs to
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const { data: quest } = await supabase.from('quests').select('course_id').eq('id', questId).single()
+    if (!quest) return { success: false, error: 'Quest not found' }
+
+    const { data: course } = await supabase.from('courses').select('instructor_id').eq('id', quest.course_id).single()
+    if (!course || course.instructor_id !== user.id) return { success: false, error: 'Not authorized' }
     const { data, error } = await supabase
       .from('quests')
       .update(questData)
@@ -495,6 +524,15 @@ export async function deleteQuest(questId: string) {
   const supabase = await createClient()
 
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const { data: quest } = await supabase.from('quests').select('course_id').eq('id', questId).single()
+    if (!quest) return { success: false, error: 'Quest not found' }
+
+    const { data: course } = await supabase.from('courses').select('instructor_id').eq('id', quest.course_id).single()
+    if (!course || course.instructor_id !== user.id) return { success: false, error: 'Not authorized' }
+
     const { error } = await supabase
       .from('quests')
       .delete()

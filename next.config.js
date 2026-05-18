@@ -3,12 +3,12 @@ const nextConfig = {
   output: 'standalone', // Required for Docker deployments (disable for Netlify)
   outputFileTracingRoot: __dirname, // Fix lockfile detection warning
   typescript: {
-    // Skip type checking during build (types are checked in development)
+    // TODO: Fix Supabase type narrowing issues across admin pages and
+    // Next.js 15 async params types, then remove this flag.
     ignoreBuildErrors: true,
   },
   eslint: {
-    // Skip ESLint during build
-    ignoreDuringBuilds: true,
+    // Lint errors must be fixed before deploying
   },
   images: {
     domains: [
@@ -64,6 +64,8 @@ const nextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com;" },
         ],
       },
     ]

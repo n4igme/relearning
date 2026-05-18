@@ -58,9 +58,21 @@ export async function middleware(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, is_active, is_approved')
       .eq('id', user.id)
       .single()
+
+    // Block deactivated users
+    if (profile && !profile.is_active) {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/login?error=Your+account+has+been+deactivated.+Please+contact+an+administrator.', request.url))
+    }
+
+    // Block unapproved users from accessing protected content
+    if (profile && !profile.is_approved && isProtectedPath) {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/login?error=Your+account+is+pending+approval.+Please+wait+for+admin+review.', request.url))
+    }
 
     const role = profile?.role
 

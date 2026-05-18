@@ -9,8 +9,9 @@ import { CourseEditTabs } from '@/components/course-edit-tabs'
 export default async function EditCoursePage({
   params,
 }: {
-  params: { courseId: string }
+  params: Promise<{ courseId: string }>
 }) {
+  const { courseId } = await params
   const profile = await getUserProfile()
 
   if (!profile) {
@@ -22,7 +23,7 @@ export default async function EditCoursePage({
   }
 
   // Fetch course
-  const courseResult = await getCourseById(params.courseId)
+  const courseResult = await getCourseById(courseId)
 
   if (!courseResult.success || !courseResult.data) {
     return (

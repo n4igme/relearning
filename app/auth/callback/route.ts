@@ -125,6 +125,10 @@ export async function GET(request: Request) {
     }
   }
 
-  // Redirect to dashboard after successful authentication
+  // Redirect to `next` param if provided (e.g., password reset), otherwise dashboard
+  const next = requestUrl.searchParams.get('next')
+  if (next && next.startsWith('/')) {
+    return NextResponse.redirect(`${origin}${next}`)
+  }
   return NextResponse.redirect(`${origin}/dashboard`)
 }

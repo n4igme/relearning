@@ -18,6 +18,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
+    "security:audit": "npm audit --audit-level=high",
+    "security:test": "vitest run --config vitest.security.config.ts",
     "docker:staging:up": "docker-compose -f docker-compose.staging.yml up -d",
     "docker:staging:up:build": "docker-compose -f docker-compose.staging.yml up --build -d",
     "docker:staging:up:pgadmin": "docker-compose -f docker-compose.staging.yml --profile tools up -d",

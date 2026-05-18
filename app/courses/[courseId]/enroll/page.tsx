@@ -9,8 +9,9 @@ import Image from 'next/image'
 export default async function CourseEnrollPage({
   params,
 }: {
-  params: { courseId: string }
+  params: Promise<{ courseId: string }>
 }) {
+  const { courseId } = await params
   const supabase = await createClient()
 
   // Get current user
@@ -45,7 +46,7 @@ export default async function CourseEnrollPage({
       )
     `
     )
-    .eq('id', params.courseId)
+    .eq('id', courseId)
     .single()
 
   if (courseError || !course) {

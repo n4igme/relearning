@@ -175,11 +175,12 @@ async function PaymentSuccessContent({ searchParams }: { searchParams: { session
   )
 }
 
-export default function PaymentSuccessPage({
+export default async function PaymentSuccessPage({
   searchParams,
 }: {
-  searchParams: { session_id?: string }
+  searchParams: Promise<{ session_id?: string }>
 }) {
+  const resolvedParams = await searchParams
   return (
     <Suspense
       fallback={
@@ -195,7 +196,7 @@ export default function PaymentSuccessPage({
         </div>
       }
     >
-      <PaymentSuccessContent searchParams={searchParams} />
+      <PaymentSuccessContent searchParams={resolvedParams} />
     </Suspense>
   )
 }

@@ -19,8 +19,9 @@ function getCourseTrack(category: string): 'offensive' | 'defensive' | 'both' {
 export default async function CoursesPage({
   searchParams,
 }: {
-  searchParams: { difficulty?: string; category?: string; track?: string; search?: string }
+  searchParams: Promise<{ difficulty?: string; category?: string; track?: string; search?: string }>
 }) {
+  const params = await searchParams
   const profile = await getUserProfile()
 
   if (!profile) {
@@ -41,10 +42,10 @@ export default async function CoursesPage({
   }
 
   // Apply filters
-  const difficulty = searchParams.difficulty
-  const category = searchParams.category
-  const track = searchParams.track
-  const search = searchParams.search?.toLowerCase()
+  const difficulty = params.difficulty
+  const category = params.category
+  const track = params.track
+  const search = params.search?.toLowerCase()
 
   if (difficulty) {
     courses = courses.filter((course: any) => course.difficulty === difficulty)

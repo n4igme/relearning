@@ -4,8 +4,35 @@ import { createClient } from '@/lib/supabase/server'
 import { Database } from '@/types/database.types'
 import { awardPoints, checkAndAwardBadges, updateStreak } from './gamification'
 import { updateSkillProficiency } from './skills'
+import { z } from 'zod'
 
 type EnrollmentInsert = Database['public']['Tables']['enrollments']['Insert']
+
+// Zod schemas for input validation
+const uuidSchema = z.string().uuid()
+
+const createCourseSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(5000).optional(),
+  thumbnail_url: z.string().url().optional(),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
+  category: z.string().max(100).optional(),
+  price: z.number().min(0),
+  learning_objectives: z.array(z.string()).optional(),
+  prerequisites: z.array(z.string()).optional(),
+})
+
+const updateCourseSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(5000).optional(),
+  thumbnail_url: z.string().url().optional(),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  category: z.string().max(100).optional(),
+  price: z.number().min(0).optional(),
+  learning_objectives: z.array(z.string()).optional(),
+  prerequisites: z.array(z.string()).optional(),
+  is_published: z.boolean().optional(),
+})
 type ProgressInsert = Database['public']['Tables']['progress']['Insert']
 
 /**
@@ -15,6 +42,13 @@ export async function enrollInCourse(studentId: string, courseId: string) {
   const supabase = await createClient()
 
   try {
+    // Validate inputs
+    const parsedStudentId = uuidSchema.safeParse(studentId)
+    const parsedCourseId = uuidSchema.safeParse(courseId)
+    if (!parsedStudentId.success || !parsedCourseId.success) {
+      return { success: false, error: 'Invalid input' }
+    }
+
     // Verify the caller is the student
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.id !== studentId) {
@@ -278,6 +312,28 @@ async function completeCourse(enrollmentId: string, studentId: string, courseId:
 
     if (enrollment?.completed_at) {
       return // Already completed
+    }
+
+    // Require passing at least one quiz (if course has quizzes)
+    const { data: quests } = await supabase
+      .from('quests')
+      .select('id')
+      .eq('course_id', courseId)
+      .eq('is_published', true)
+
+    if (quests && quests.length > 0) {
+      const questIds = quests.map(q => q.id)
+      const { data: passedAttempts } = await supabase
+        .from('quest_attempts')
+        .select('id')
+        .in('quest_id', questIds)
+        .eq('student_id', studentId)
+        .eq('passed', true)
+
+      if (!passedAttempts || passedAttempts.length === 0) {
+        // Student hasn't passed any quiz — don't complete/certify
+        return
+      }
     }
 
     // Mark enrollment as completed
@@ -589,6 +645,18 @@ export async function createCourse(instructorId: string, courseData: {
   const supabase = await createClient()
 
   try {
+    // Verify caller is the instructor
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.id !== instructorId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    // Validate input
+    const parsed = createCourseSchema.safeParse(courseData)
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid input: ' + parsed.error.issues[0].message }
+    }
+
     // Generate slug from title
     const baseSlug = courseData.title
       .toLowerCase()
@@ -659,6 +727,12 @@ export async function updateCourse(courseId: string, courseData: Partial<{
       return { success: false, error: 'Not authorized to update this course' }
     }
 
+    // Validate input
+    const parsed = updateCourseSchema.safeParse(courseData)
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid input: ' + parsed.error.issues[0].message }
+    }
+
     // Field allowlist — prevent mass assignment of protected fields
     const ALLOWED_FIELDS = ['title', 'description', 'thumbnail_url', 'difficulty', 'category', 'price', 'learning_objectives', 'prerequisites', 'is_published'] as const
     const sanitized: Record<string, any> = {}
@@ -692,6 +766,15 @@ export async function deleteCourse(courseId: string) {
   const supabase = await createClient()
 
   try {
+    // Verify caller owns this course
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const { data: course } = await supabase.from('courses').select('instructor_id').eq('id', courseId).single()
+    if (!course || course.instructor_id !== user.id) {
+      return { success: false, error: 'Not authorized to delete this course' }
+    }
+
     const { error } = await supabase
       .from('courses')
       .delete()
@@ -717,6 +800,14 @@ export async function createMaterial(courseId: string, materialData: {
   const supabase = await createClient()
 
   try {
+    // Verify caller owns the course
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const { data: course } = await supabase.from('courses').select('instructor_id').eq('id', courseId).single()
+    if (!course || course.instructor_id !== user.id) {
+      return { success: false, error: 'Not authorized' }
+    }
     const newMaterial: Database['public']['Tables']['materials']['Insert'] = {
       course_id: courseId,
       title: materialData.title,

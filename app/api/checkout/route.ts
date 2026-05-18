@@ -16,6 +16,14 @@ const getStripe = () => {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiting: 5 checkout attempts per minute per IP
+    const { checkRateLimit } = await import('@/lib/rate-limit')
+    const ip = req.headers.get('x-forwarded-for') || 'unknown'
+    const { allowed } = await checkRateLimit(`checkout:${ip}`, { maxRequests: 5, windowMs: 60_000 })
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please wait.' }, { status: 429 })
+    }
+
     // CSRF Protection: Verify origin header matches expected domain
     const origin = req.headers.get('origin')
     const referer = req.headers.get('referer')

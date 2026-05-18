@@ -9,8 +9,9 @@ import Link from 'next/link'
 export default async function QuestPage({
   params,
 }: {
-  params: { questId: string }
+  params: Promise<{ questId: string }>
 }) {
+  const { questId } = await params
   const profile = await getUserProfile()
 
   if (!profile) {
@@ -22,7 +23,7 @@ export default async function QuestPage({
   }
 
   // Fetch quest details
-  const questResult = await getQuestWithQuestions(params.questId)
+  const questResult = await getQuestWithQuestions(questId)
 
   if (!questResult.success || !questResult.data) {
     return (
@@ -42,7 +43,7 @@ export default async function QuestPage({
   const quest = questResult.data
 
   // Check if student can attempt
-  const eligibility = await canAttemptQuest(params.questId, profile.id)
+  const eligibility = await canAttemptQuest(questId, profile.id)
 
   if (!eligibility.canAttempt) {
     return (

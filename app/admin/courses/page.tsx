@@ -10,7 +10,7 @@ export default async function AdminCoursesPage() {
   const profile = await getUserProfile()
 
   if (!profile || profile.role !== 'admin') {
-    redirect('/dashboard')
+    return redirect('/dashboard')
   }
 
   const coursesResult = await getAllCoursesAdmin()

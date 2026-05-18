@@ -89,7 +89,11 @@ npm run dev
 - **Row Level Security** — Database-level access control
 - **Role-based Authorization** — Middleware + server action level enforcement
 - **Field Allowlists** — Prevents mass assignment on sensitive operations
-- **Security Headers** — X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- **Security Headers** — CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- **Rate Limiting** — Login, registration, and checkout endpoints
+- **Input Validation** — Zod schemas on critical server actions
+- **Audit Logging** — Admin actions tracked with actor, target, and timestamp
+- **Password Reset** — Email-based password recovery flow
 
 ---
 
@@ -114,6 +118,8 @@ npm run dev
 app/
 ├── login/              # Login page
 ├── register/           # Registration page
+├── forgot-password/    # Password reset request
+├── reset-password/     # Set new password
 ├── admin/              # User management, enrollment requests, course approval
 ├── mentor/             # Course creation & editing
 ├── courses/            # Browse, enroll, learn
@@ -129,8 +135,10 @@ app/
 
 lib/actions/            # Server actions (auth, courses, payments, gamification, quests, skills, tools)
 lib/supabase/           # Supabase client (server, client, admin)
+lib/rate-limit.ts       # Rate limiting utility
 database/               # SQL schemas, migrations, and seed files
 components/             # React components (UI, forms, interfaces)
+assessment/             # Security audit reports
 ```
 
 ---
@@ -162,6 +170,10 @@ npm run test                   # Run unit tests (Vitest)
 npm run test:watch             # Watch mode
 npm run test:coverage          # Coverage report
 npm run test:e2e               # End-to-end tests (Playwright)
+
+# Security
+npm run security:test          # Run security test suite
+npm run security:audit         # Check dependencies for vulnerabilities
 
 # Docker Staging
 npm run docker:staging:up:build    # Start with PostgreSQL

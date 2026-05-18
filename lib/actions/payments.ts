@@ -70,7 +70,9 @@ export async function updatePaymentStatus({
     throw new Error('Either paymentIntentId or sessionId must be provided')
   }
 
-  const supabase = await createClient()
+  // Use admin client — this is called from webhooks which have no user session
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const supabase = createAdminClient()
 
   // Find payment by either payment intent ID or session ID
   let query = supabase.from('payments').select()

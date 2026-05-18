@@ -30,6 +30,15 @@ async function approveUser(formData: FormData) {
     redirect('/admin/users?error=' + encodeURIComponent('Failed to approve user: ' + updateError.message))
   }
 
+  // Audit log
+  await supabase.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'approve_user',
+    target_type: 'profile',
+    target_id: userId,
+    details: { is_approved: true },
+  })
+
   // Confirm user's email in Supabase auth (allows them to login)
   const { error: authError } = await adminClient.auth.admin.updateUserById(
     userId,
@@ -67,6 +76,14 @@ async function rejectUser(formData: FormData) {
     redirect('/admin/users?error=' + encodeURIComponent('Failed to reject user: ' + error.message))
   }
 
+  // Audit log
+  await supabase.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'reject_user',
+    target_type: 'profile',
+    target_id: userId,
+  })
+
   redirect('/admin/users?success=User rejected')
 }
 
@@ -93,6 +110,15 @@ async function toggleUserActive(formData: FormData) {
     console.error('Error toggling user active status:', error)
     redirect('/admin/users?error=' + encodeURIComponent('Failed to update user status: ' + error.message))
   }
+
+  // Audit log
+  await supabase.from('audit_log').insert({
+    actor_id: user.id,
+    action: isActive ? 'deactivate_user' : 'activate_user',
+    target_type: 'profile',
+    target_id: userId,
+    details: { is_active: !isActive },
+  })
 
   redirect('/admin/users')
 }
