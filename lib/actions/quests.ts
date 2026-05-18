@@ -18,6 +18,12 @@ export async function submitQuestAttempt(
   const supabase = await createClient()
 
   try {
+    // Verify caller is the student
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.id !== studentId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
     // Get quest details
     const { data: quest, error: questError } = await supabase
       .from('quests')
@@ -121,6 +127,21 @@ export async function submitQuestAttempt(
       .single()
 
     if (attemptError) throw attemptError
+
+    // Post-insert race condition guard: verify we haven't exceeded max_attempts
+    if (quest.max_attempts) {
+      const { data: allAttempts } = await supabase
+        .from('quest_attempts')
+        .select('id')
+        .eq('quest_id', questId)
+        .eq('student_id', studentId)
+
+      if (allAttempts && allAttempts.length > quest.max_attempts) {
+        // Race condition detected — rollback this attempt
+        await supabase.from('quest_attempts').delete().eq('id', attempt.id)
+        return { success: false, error: `Maximum attempts (${quest.max_attempts}) reached` }
+      }
+    }
 
     // Award points if passed
     if (passed) {
@@ -654,12 +675,26 @@ export async function deleteOption(optionId: string) {
 }
 
 /**
- * Get all quests for a course (mentor view)
+ * Get all quests for a course (mentor view — includes correct answers)
  */
 export async function getAllCourseQuests(courseId: string) {
   const supabase = await createClient()
 
   try {
+    // Verify caller is the course instructor
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const { data: course } = await supabase
+      .from('courses')
+      .select('instructor_id')
+      .eq('id', courseId)
+      .single()
+
+    if (!course || course.instructor_id !== user.id) {
+      return { success: false, error: 'Only the course instructor can view quiz details' }
+    }
+
     const { data, error } = await supabase
       .from('quests')
       .select(`

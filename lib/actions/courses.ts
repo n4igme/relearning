@@ -9,12 +9,18 @@ type EnrollmentInsert = Database['public']['Tables']['enrollments']['Insert']
 type ProgressInsert = Database['public']['Tables']['progress']['Insert']
 
 /**
- * Enroll student in a course
+ * Enroll student in a course (public — always verifies payment)
  */
-export async function enrollInCourse(studentId: string, courseId: string, skipPaymentCheck = false) {
+export async function enrollInCourse(studentId: string, courseId: string) {
   const supabase = await createClient()
 
   try {
+    // Verify the caller is the student
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.id !== studentId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
     // Check if already enrolled
     const { data: existing } = await supabase
       .from('enrollments')
@@ -38,8 +44,8 @@ export async function enrollInCourse(studentId: string, courseId: string, skipPa
       return { success: false, error: 'Course not found' }
     }
 
-    // If course is paid and not skipping payment check, verify payment
-    if (!skipPaymentCheck && course.price && course.price > 0) {
+    // Always verify payment for paid courses
+    if (course.price && course.price > 0) {
       const { data: payment } = await supabase
         .from('payments')
         .select('*')
@@ -80,6 +86,48 @@ export async function enrollInCourse(studentId: string, courseId: string, skipPa
 }
 
 /**
+ * Internal enrollment — skips payment check. Only for use by webhook/admin flows.
+ */
+export async function enrollInCourseInternal(studentId: string, courseId: string) {
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminClient = createAdminClient()
+
+  try {
+    const { data: existing } = await adminClient
+      .from('enrollments')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('course_id', courseId)
+      .single()
+
+    if (existing) {
+      return { success: false, error: 'Already enrolled in this course' }
+    }
+
+    const enrollmentData: EnrollmentInsert = {
+      student_id: studentId,
+      course_id: courseId,
+      enrolled_at: new Date().toISOString(),
+      progress_percentage: 0,
+    }
+
+    const { data: enrollment, error } = await adminClient
+      .from('enrollments')
+      .insert(enrollmentData)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    await updateStreak(studentId)
+    return { success: true, data: enrollment }
+  } catch (error) {
+    console.error('Error in internal enrollment:', error)
+    return { success: false, error }
+  }
+}
+
+/**
  * Mark a sub-material (lesson/video) as completed
  */
 export async function markSubMaterialCompleted(
@@ -90,6 +138,24 @@ export async function markSubMaterialCompleted(
   const supabase = await createClient()
 
   try {
+    // Verify caller owns this enrollment
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const { data: enrollment } = await supabase
+      .from('enrollments')
+      .select('student_id')
+      .eq('id', enrollmentId)
+      .single()
+
+    if (!enrollment || enrollment.student_id !== user.id) {
+      return { success: false, error: 'Not your enrollment' }
+    }
+
+    // Enforce minimum time spent (at least 30 seconds)
+    if (timeSpent < 30) {
+      return { success: false, error: 'Insufficient time spent on material' }
+    }
     // Check if progress entry exists
     const { data: existing } = await supabase
       .from('progress')
@@ -129,17 +195,8 @@ export async function markSubMaterialCompleted(
     // Recalculate course progress
     await updateCourseProgress(enrollmentId)
 
-    // Get student ID from enrollment
-    const { data: enrollment } = await supabase
-      .from('enrollments')
-      .select('student_id')
-      .eq('id', enrollmentId)
-      .single()
-
-    if (enrollment) {
-      // Update streak
-      await updateStreak(enrollment.student_id)
-    }
+    // Update streak (we already verified ownership above)
+    await updateStreak(user.id)
 
     return { success: true }
   } catch (error) {
@@ -588,14 +645,33 @@ export async function updateCourse(courseId: string, courseData: Partial<{
   const supabase = await createClient()
 
   try {
-    const updateData: Database['public']['Tables']['courses']['Update'] = {
-      ...courseData,
-      updated_at: new Date().toISOString(),
+    // Verify caller owns this course
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const { data: course } = await supabase
+      .from('courses')
+      .select('instructor_id')
+      .eq('id', courseId)
+      .single()
+
+    if (!course || course.instructor_id !== user.id) {
+      return { success: false, error: 'Not authorized to update this course' }
     }
+
+    // Field allowlist — prevent mass assignment of protected fields
+    const ALLOWED_FIELDS = ['title', 'description', 'thumbnail_url', 'difficulty', 'category', 'price', 'learning_objectives', 'prerequisites', 'is_published'] as const
+    const sanitized: Record<string, any> = {}
+    for (const key of ALLOWED_FIELDS) {
+      if (key in courseData) {
+        sanitized[key] = (courseData as any)[key]
+      }
+    }
+    sanitized.updated_at = new Date().toISOString()
 
     const { data, error } = await supabase
       .from('courses')
-      .update(updateData)
+      .update(sanitized)
       .eq('id', courseId)
       .select()
       .single()
@@ -844,6 +920,20 @@ export async function approveCourse(courseId: string, approved: boolean) {
   const supabase = await createClient()
 
   try {
+    // Verify caller is admin
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role !== 'admin') {
+      return { success: false, error: 'Admin access required' }
+    }
+
     const { data, error } = await supabase
       .from('courses')
       .update({ is_approved: approved, updated_at: new Date().toISOString() })

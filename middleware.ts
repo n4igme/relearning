@@ -54,6 +54,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
+  // Role-based route protection
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const role = profile?.role
+
+    if (request.nextUrl.pathname.startsWith('/admin') && role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    if (request.nextUrl.pathname.startsWith('/mentor') && role !== 'mentor' && role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
   // Redirect authenticated users away from auth pages
   const authPaths = ['/login', '/register']
   const isAuthPath = authPaths.some((path) =>

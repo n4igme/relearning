@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { enrollInCourse } from './courses'
+import { enrollInCourseInternal } from './courses'
 
 export interface EnrollmentRequest {
   id: string
@@ -307,7 +307,7 @@ export async function approveEnrollmentRequest(requestId: string, adminNotes?: s
     }
 
     // Enroll the student in the course (skip payment check)
-    const enrollResult = await enrollInCourse(request.student_id, request.course_id, true)
+    const enrollResult = await enrollInCourseInternal(request.student_id, request.course_id)
 
     if (!enrollResult.success) {
       // Rollback approval if enrollment fails

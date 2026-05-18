@@ -32,8 +32,10 @@ export async function getAllTools(filters?: {
     }
 
     if (filters?.searchQuery) {
+      // Escape SQL LIKE wildcards to prevent pattern injection
+      const escaped = filters.searchQuery.replace(/[%_\\]/g, '\\$&')
       query = query.or(
-        `name.ilike.%${filters.searchQuery}%,description.ilike.%${filters.searchQuery}%`
+        `name.ilike.%${escaped}%,description.ilike.%${escaped}%`
       )
     }
 

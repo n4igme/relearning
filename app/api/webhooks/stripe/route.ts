@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { updatePaymentStatus } from '@/lib/actions/payments'
-import { enrollInCourse } from '@/lib/actions/courses'
+import { enrollInCourseInternal } from '@/lib/actions/courses'
 
 const getStripe = () => {
   const secretKey = process.env.STRIPE_SECRET_KEY
@@ -97,7 +97,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     })
 
     // Enroll the student in the course (skip payment check since we just confirmed payment)
-    const result = await enrollInCourse(userId, courseId, true)
+    const result = await enrollInCourseInternal(userId, courseId)
 
     if (!result.success) {
       console.error('Failed to enroll student:', result.error)

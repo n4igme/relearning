@@ -10,6 +10,12 @@ import type { Database } from '@/types/database.types'
 async function approveUser(formData: FormData) {
   'use server'
 
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (callerProfile?.role !== 'admin') redirect('/dashboard')
+
   const adminClient = createAdminClient()
   const userId = formData.get('userId') as string
 
@@ -41,6 +47,12 @@ async function approveUser(formData: FormData) {
 async function rejectUser(formData: FormData) {
   'use server'
 
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (callerProfile?.role !== 'admin') redirect('/dashboard')
+
   const adminClient = createAdminClient()
   const userId = formData.get('userId') as string
 
@@ -60,6 +72,12 @@ async function rejectUser(formData: FormData) {
 
 async function toggleUserActive(formData: FormData) {
   'use server'
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (callerProfile?.role !== 'admin') redirect('/dashboard')
 
   const adminClient = createAdminClient()
   const userId = formData.get('userId') as string
