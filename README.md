@@ -24,6 +24,30 @@ npm run dev
 
 **Access:** http://localhost:3000
 
+### Local Development with Self-hosted Supabase
+
+```bash
+# Install Supabase CLI
+brew install supabase/tap/supabase
+
+# Start local Supabase (Auth, PostgREST, PostgreSQL, Studio)
+supabase init
+supabase start
+
+# Apply schema
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/supabase-schema.sql
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/add-missing-rls-policies.sql
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/seed-skills.sql
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/seed-badges.sql
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/seed-tools.sql
+
+# Create default admin (email: admin@cybersec.local / password: Admin123!)
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/create-admin.sql
+
+# Use the keys from `supabase status` in your .env.local
+npm run dev
+```
+
 ---
 
 ## Documentation
@@ -43,27 +67,29 @@ npm run dev
 ## Features
 
 ### Learning Management
-- **Multi-role System** - Admin, Mentor, Student with approval workflows
-- **Course Builder** - Chapters, lessons, video hosting (Cloudinary)
-- **Assessments** - Auto-graded quizzes with multiple question types
-- **Progress Tracking** - Per-lesson completion with video position
-- **Certificates** - Auto-generated on course completion
+- **Multi-role System** — Admin, Mentor, Student with approval workflows
+- **Course Builder** — Chapters, lessons, video hosting (Cloudinary)
+- **Assessments** — Auto-graded quizzes with multiple question types
+- **Progress Tracking** — Per-lesson completion with minimum time validation
+- **Certificates** — Auto-generated on course completion
 
 ### Gamification
-- **Points** - Earn 100-275 per quiz, 200-800 per course
-- **25 Skills** - Web Security, Network Security, Cryptography, Forensics, etc.
-- **15 Badges** - Bronze to Platinum tier achievements
-- **Leaderboard** - Global rankings with streak tracking
-- **Progression** - Beginner → Intermediate → Advanced → Expert
+- **Points** — Earn 100-275 per quiz, 200-800 per course
+- **25 Skills** — Web Security, Network Security, Cryptography, Forensics, etc.
+- **15 Badges** — Bronze to Platinum tier achievements
+- **Leaderboard** — Global rankings with streak tracking
+- **Progression** — Beginner → Intermediate → Advanced → Expert
 
 ### Payments
-- **Stripe** - Automated checkout with webhooks
-- **Manual** - Bank transfer with admin approval
+- **Stripe** — Automated checkout with webhooks
+- **Manual** — Bank transfer with admin approval
 
 ### Security
-- **Authentication** - Email/password + Google OAuth (Supabase Auth)
-- **Row Level Security** - Database-level access control
-- **Protected Routes** - Middleware-based authorization
+- **Authentication** — Email/password + Google OAuth (Supabase Auth)
+- **Row Level Security** — Database-level access control
+- **Role-based Authorization** — Middleware + server action level enforcement
+- **Field Allowlists** — Prevents mass assignment on sensitive operations
+- **Security Headers** — X-Frame-Options, X-Content-Type-Options, Referrer-Policy
 
 ---
 
@@ -77,6 +103,7 @@ npm run dev
 | Auth | Supabase Auth |
 | Media | Cloudinary |
 | Payments | Stripe |
+| Testing | Vitest + Playwright |
 | Deploy | Netlify / Docker |
 
 ---
@@ -85,17 +112,25 @@ npm run dev
 
 ```
 app/
-├── (auth)/           # Login, register
-├── admin/            # User management, enrollment requests
-├── mentor/           # Course creation
-├── courses/          # Browse, learn, enroll
-├── dashboard/        # Student dashboard
-├── leaderboard/      # Rankings
-├── skills/           # Skill tracking
-└── api/              # Checkout, webhooks
+├── login/              # Login page
+├── register/           # Registration page
+├── admin/              # User management, enrollment requests, course approval
+├── mentor/             # Course creation & editing
+├── courses/            # Browse, enroll, learn
+├── dashboard/          # Student dashboard
+├── leaderboard/        # Rankings
+├── skills/             # Skill tracking
+├── gamification/       # Points, badges overview
+├── certificates/       # Student certificates
+├── quests/             # Quiz attempts
+├── tools/              # Security tools catalog
+├── payment/            # Payment success page
+└── api/                # Checkout, webhooks, check-user
 
-lib/actions/          # Server actions (auth, courses, payments, gamification)
-database/             # SQL schemas and seed files
+lib/actions/            # Server actions (auth, courses, payments, gamification, quests, skills, tools)
+lib/supabase/           # Supabase client (server, client, admin)
+database/               # SQL schemas, migrations, and seed files
+components/             # React components (UI, forms, interfaces)
 ```
 
 ---
@@ -122,6 +157,12 @@ npm run dev                    # Start with Turbopack
 npm run build                  # Production build
 npm run lint                   # ESLint check
 
+# Testing
+npm run test                   # Run unit tests (Vitest)
+npm run test:watch             # Watch mode
+npm run test:coverage          # Coverage report
+npm run test:e2e               # End-to-end tests (Playwright)
+
 # Docker Staging
 npm run docker:staging:up:build    # Start with PostgreSQL
 npm run docker:staging:down        # Stop services
@@ -140,11 +181,11 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Required - Cloudinary
+# Optional - Cloudinary (for video/media hosting)
 CLOUDINARY_CLOUD_NAME=your_cloud
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud
 
-# Optional - Stripe
+# Optional - Stripe (for payment processing)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_xxx
 STRIPE_SECRET_KEY=sk_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
@@ -163,8 +204,26 @@ See `.env.local.example` for the complete template.
 
 - **Core:** profiles, courses, materials, sub_materials, enrollments, progress, quests, certificates, payments
 - **Gamification:** skills, student_skills, badges, student_badges, leaderboard_stats, point_history
+- **Requests:** enrollment_requests
+
+**Schema files:**
+- `database/supabase-schema.sql` — Main schema with RLS policies
+- `database/add-missing-rls-policies.sql` — Additional RLS policies for full coverage
+- `database/local-schema.sql` — Simplified schema for local PostgreSQL (without Supabase auth)
 
 **Seed scripts:** `database/seed-skills.sql`, `seed-badges.sql`, `seed-tools.sql`
+
+---
+
+## Deployment Options
+
+| Environment | Setup | Database |
+|-------------|-------|----------|
+| Local dev | `npm run dev` | Supabase Cloud or self-hosted |
+| Docker staging | `npm run docker:staging:up:build` | Supabase Cloud or self-hosted |
+| Production | Netlify / Docker | Supabase Cloud |
+
+For self-hosted Supabase, use the Supabase CLI (`supabase start`) which provides Auth, PostgREST, and PostgreSQL locally.
 
 ---
 
@@ -184,6 +243,6 @@ ISC License - See [LICENSE](./LICENSE)
 
 ---
 
-**Version:** 2.0.1 | **Updated:** January 2026
+**Version:** 2.0.0 | **Updated:** May 2026
 
 **Built with Next.js 15 | TypeScript | Supabase | Tailwind CSS**
