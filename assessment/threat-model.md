@@ -1,247 +1,492 @@
 # Threat Model — RE-learning Platform
 
-**Date:** 2026-05-20  
-**Cycle:** 5 (fully patched)  
-**Scope:** Post-remediation residual risk assessment  
-**Overall Posture:** Significantly hardened. No Critical/High vulnerabilities remain. Residual issues are Medium/Low severity, mostly information disclosure and defense-in-depth gaps.
+**Target:** `/Users/nb-dk-0552/Project/relearning`
+**Date:** 2026-05-21
+**Assessment Cycle:** Post-patch (5 cycles completed)
+**Overall Remaining Risk:** Medium/Low — All Critical/High vulnerabilities have been remediated. Remaining risks are primarily Medium-severity logic issues, defense-in-depth gaps, and information disclosure concerns.
 
 ---
 
 ## 1. Threat Actors
 
-| Actor | Motivation | Capability | Access Level |
-|-------|-----------|------------|--------------|
-| Authenticated Student | Curiosity, grade manipulation, free access to paid content | Low-Medium; can call any server action | Authenticated, student role |
-| Malicious Mentor | Data harvesting, reputation manipulation | Medium; owns courses, can craft quiz content | Authenticated, mentor role |
-| External Attacker | Credential theft, data scraping, platform disruption | Medium-High; no initial auth | Unauthenticated |
-| Compromised Admin | Full platform takeover | High; bypasses all app-layer controls | Admin role (no MFA) |
-| Automated Bot | Credential stuffing, scraping user data | Medium; can spoof headers | Unauthenticated or stolen session |
+| Actor | Access Level | Motivation | Capabilities |
+|-------|-------------|------------|--------------|
+| **Malicious Student** | Authenticated (student role, approved) | Free access to paid content, inflated grades/scores, certificate fraud, leaderboard manipulation | Can call all student-facing server actions, enumerate UUIDs, manipulate client-side time values |
+| **Malicious Mentor** | Authenticated (mentor role, approved) | Data exfiltration, content sabotage, privilege escalation to admin | Can create/modify courses, access enrolled student data via RLS, potentially probe RLS-dependent actions |
+| **Unapproved User** | Authenticated (unapproved) | Bypass approval gate, access paid content | Has valid JWT but middleware blocks protected paths; can still call server actions directly if endpoint known |
+| **Anonymous Attacker** | Unauthenticated | Account takeover, credential stuffing, payment fraud, DoS | Can target public endpoints (signUp, signIn, OAuth, password reset), attempt rate limit bypass |
+| **Compromised Admin** | Full admin access | Data theft, mass privilege changes, financial fraud | Full service-role access, can bypass all RLS, modify payments/enrollments |
+| **Insider (Infrastructure)** | Server/env access | Secret exfiltration, DB manipulation | Access to `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, deployment configs |
 
 ---
 
 ## 2. STRIDE Analysis
 
-### 2.1 Authentication System (Supabase Auth + Middleware)
+### 2.1 API Routes
 
-| Threat | Category | Residual Risk | Notes |
-|--------|----------|---------------|-------|
-| Admin account takeover via credential stuffing | Spoofing | **Medium** | No MFA for admin accounts; rate limit keyed on email (not IP) for login, but checkout uses spoofable `x-forwarded-for` |
-| Session hijacking via XSS | Spoofing | **Low-Medium** | CSP allows `unsafe-inline` for scripts and styles, expanding XSS surface |
-| Rate limit bypass on checkout | Tampering | **Medium** | `x-forwarded-for` header is attacker-controlled; can rotate IPs to bypass 5/min limit |
+#### `POST /api/checkout` (`app/api/checkout/route.ts:22`)
 
-### 2.2 Profiles & User Data
+| Threat | Category | Risk | Mitigation Present | Residual Risk |
+|--------|----------|------|-------------------|---------------|
+| Attacker forges origin header to bypass CSRF | Spoofing | Low | Origin/Referer check against `NEXT_PUBLIC_APP_URL` | Low — browsers enforce origin on POST |
+| Rate limit bypass via `x-forwarded-for` spoofing | DoS | Medium | Rate limit keyed on `x-forwarded-for` (line 25) | **Medium** — no trusted proxy guarantee |
+| Price manipulation via courseId swap | Tampering | Low | Price fetched server-side from DB (line 89) | Mitigated |
+| Double-payment race condition | Tampering | Low | Checks existing payment (line 107) but no DB lock | Low — Stripe idempotency helps |
 
-| Threat | Category | Residual Risk | Notes |
-|--------|----------|---------------|-------|
-| Mass user enumeration | Information Disclosure | **Medium** | `profiles` SELECT USING(true) exposes all emails, full names, roles to any authenticated user |
-| Targeted phishing using harvested data | Information Disclosure | **Medium** | Attacker can identify admins by role field, then target them |
+#### `GET /api/check-user` (`app/api/check-user/route.ts:4`)
 
-### 2.3 Course Content & Enrollment
+| Threat | Category | Risk | Mitigation Present | Residual Risk |
+|--------|----------|------|-------------------|---------------|
+| Non-admin access to user enumeration | Info Disclosure | Low | Admin role check (line 18-22) | Mitigated |
+| Admin enumerates all auth users | Info Disclosure | Low | `listUsers()` returns all users (line 44) | Low — admin-only, but no pagination/audit |
+| No rate limiting on admin endpoint | DoS | Low | No rate limit | Low — admin-only |
 
-| Threat | Category | Residual Risk | Notes |
-|--------|----------|---------------|-------|
-| Certificate retention after refund | Repudiation | **Low** | Certificates persist in DB after enrollment deletion; can be used as false credential |
-| Defense-in-depth gap on material mutations | Elevation of Privilege | **Low** | `updateMaterial`/`createSubMaterial` rely solely on RLS without app-layer ownership checks |
+#### `POST /api/webhooks/stripe` (`app/api/webhooks/stripe/route.ts:18`)
 
-### 2.4 Gamification & Quests
+| Threat | Category | Risk | Mitigation Present | Residual Risk |
+|--------|----------|------|-------------------|---------------|
+| Forged webhook events | Spoofing | Low | Stripe signature verification (line 38-42) | Mitigated |
+| Replay attacks | Repudiation | Low | Stripe's built-in tolerance window (~5 min) | Low — no app-level replay protection |
+| Enrollment on partial refund | Tampering | Low | `charge.refunded` deletes enrollment (line 130) | Low — partial refunds still revoke full access |
+| Failed enrollment after payment | Denial of Service | Medium | Logs error but no retry/notification (line 97) | **Medium** — manual intervention needed |
 
-| Threat | Category | Residual Risk | Notes |
-|--------|----------|---------------|-------|
-| Silent RLS failures in badge/skill award | Denial of Service | **Low** | `checkAndAwardBadges` runs in user context but INSERT policies may require admin; failures may be silent |
-| Leaderboard manipulation via timing | Tampering | **Low** | Streak system trusts client-reported completion; min 30s enforced but no server-side session timing |
+#### `GET /auth/callback` (`app/auth/callback/route.ts:7`)
 
-### 2.5 API & Error Handling
+| Threat | Category | Risk | Mitigation Present | Residual Risk |
+|--------|----------|------|-------------------|---------------|
+| Code injection via `next` param | Tampering | Low | Validates `next.startsWith('/')` (line 119) | Mitigated — no open redirect |
+| Role escalation via Google OAuth | Elevation | Low | Non-student roles blocked from Google SSO (line 76) | Mitigated |
+| Auto-approval bypass for non-students | Elevation | Low | Only students auto-approved (line 82-84) | Mitigated |
 
-| Threat | Category | Residual Risk | Notes |
-|--------|----------|---------------|-------|
-| Internal state leakage via raw errors | Information Disclosure | **Medium** | 47 instances of `return { success: false, error }` pass raw caught error objects to client (may include stack traces, DB schema details) |
-| TypeScript build errors ignored | Tampering | **Low** | `ignoreBuildErrors: true` may allow type-unsafe code paths into production |
+### 2.2 Server Action Groups
+
+#### Auth Actions (`lib/actions/auth.ts`)
+
+| Threat | Category | Risk | Residual Risk |
+|--------|----------|------|---------------|
+| Credential stuffing on `signIn` | Spoofing | Medium | Low — rate limited 5/min per email, fails closed |
+| Account enumeration via signup | Info Disclosure | Low | Low — generic error messages |
+| Password reset flood | DoS | Low | Low — rate limited 3/hr per email |
+| Weak password acceptance | Spoofing | Low | Low — min 8 chars enforced, but no complexity rules |
+
+#### Course Actions (`lib/actions/courses.ts`)
+
+| Threat | Category | Risk | Residual Risk |
+|--------|----------|------|---------------|
+| Unauthorized material modification | Tampering | Medium | **Medium** — `updateMaterial`, `deleteMaterial`, `createSubMaterial`, `updateSubMaterial`, `deleteSubMaterial` (lines 474-571) rely solely on RLS |
+| `getAllCoursesAdmin` called by non-admin | Info Disclosure | Low | Low — RLS filters results silently |
+| `timeSpent` spoofing in `markSubMaterialCompleted` | Tampering | Medium | **Medium** — client sends arbitrary value, only min 30s check (line 200) |
+| Cross-course progress injection | Tampering | Low | Low — enrollment ownership verified, RLS + UNIQUE constraint |
+
+#### Payment Actions (`lib/actions/payments.ts`)
+
+| Threat | Category | Risk | Residual Risk |
+|--------|----------|------|---------------|
+| `getCoursePayments` info disclosure | Info Disclosure | Medium | **Medium** — no explicit ownership check (line 168), relies on RLS |
+| `createPayment` without auth check | Tampering | Low | Low — RLS enforces student_id = uid |
+
+#### Quest Actions (`lib/actions/quests.ts`)
+
+| Threat | Category | Risk | Residual Risk |
+|--------|----------|------|---------------|
+| Answer leakage via timing/error | Info Disclosure | Low | Mitigated — answers fetched via admin client, separate table |
+| `createQuestion`/`updateQuestion` by non-owner | Tampering | Medium | **Medium** — no app-level ownership check (lines 378-435), RLS only |
+| Max attempts race condition | Tampering | Low | Low — DB trigger + post-insert cleanup (lines 100-108) |
+| Quiz answer brute-force across attempts | Tampering | Low | Low — max_attempts enforced |
+
+#### Gamification Actions (`lib/actions/gamification.ts`)
+
+| Threat | Category | Risk | Residual Risk |
+|--------|----------|------|---------------|
+| Points inflation via repeated triggers | Tampering | Low | Low — called internally from completion flows |
+| Leaderboard data scraping | Info Disclosure | Low | Low — public by design |
+
+#### Enrollment Request Actions (`lib/actions/enrollment-requests.ts`)
+
+| Threat | Category | Risk | Residual Risk |
+|--------|----------|------|---------------|
+| Spam enrollment requests | DoS | Low | Low — UNIQUE constraint on (student_id, course_id, status) |
+| Re-request after rejection | Tampering | Low | **Low-Medium** — UNIQUE allows multiple rejected entries for same course |
 
 ---
 
 ## 3. Feature Threat Analysis
 
-### 3.1 Profile Data Exposure
+### 3.1 User Registration
 
-| Abuse Case | Impact | Likelihood |
-|------------|--------|------------|
-| Authenticated user queries all profiles to harvest admin emails | Targeted phishing against admins (no MFA) | High |
-| Competitor scrapes full user list for recruitment/spam | Privacy violation, GDPR exposure | Medium |
-| Attacker maps role distribution to identify high-value targets | Reconnaissance for privilege escalation | Medium |
+**Assets at Risk:** Profile data, role assignment, approval status
+**Trust Assumptions:** Supabase Auth handles email verification securely; DB trigger `handle_new_user()` correctly assigns roles; rate limiter DB is available.
 
-### 3.2 Admin Account (No MFA)
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Mass account creation to exhaust rate_limits table | Anonymous | Low | Low — 3/hr per email |
+| Register as mentor to gain course creation access without approval | Anonymous | Low | Mitigated — mentor requires admin approval |
+| Manipulate `raw_user_meta_data` to inject admin role at signup | Anonymous | Low | Mitigated — trigger only auto-approves admin role, and admin creation requires DB seed |
 
-| Abuse Case | Impact | Likelihood |
-|------------|--------|------------|
-| Credential stuffing against known admin email (from profiles) | Full platform compromise | Medium |
-| Phishing admin using harvested email + social engineering | Account takeover → approve malicious courses, exfiltrate data | Medium |
+### 3.2 Course Management
 
-### 3.3 Rate Limit IP Spoofing
+**Assets at Risk:** Course content, intellectual property, pricing data
+**Trust Assumptions:** RLS policies on `materials` and `sub_materials` correctly enforce instructor ownership; Cloudinary URLs are not guessable.
 
-| Abuse Case | Impact | Likelihood |
-|------------|--------|------------|
-| Attacker rotates `x-forwarded-for` values to bypass checkout rate limit | Unlimited checkout session creation (Stripe API abuse, cost amplification) | Medium |
-| Bot farm uses spoofed IPs to brute-force checkout flow | Resource exhaustion on Stripe integration | Low |
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Mentor modifies another mentor's course materials via direct action call | Malicious Mentor | Medium | Low — RLS blocks, but no app-level error |
+| Mentor sets price to 0 after approval to bypass payment | Malicious Mentor | Low | Low — `updateCourse` has field allowlist |
+| Unpublished course content accessed via direct ID | Student | Low | Low — `getCourseById` blocks unapproved unless owner/admin |
 
-### 3.4 CSP unsafe-inline
+### 3.3 Enrollment (Paid)
 
-| Abuse Case | Impact | Likelihood |
-|------------|--------|------------|
-| Stored XSS via course description/title (if sanitization missed) | Session theft, admin impersonation | Low (Zod validation + React escaping mitigate) |
-| DOM-based XSS via URL parameters rendered inline | Cookie exfiltration | Low |
+**Assets at Risk:** Payment integrity, course access, revenue
+**Trust Assumptions:** Stripe webhook signature is valid; `enrollInCourseInternal` is only reachable from webhook/admin context; payment status transitions are one-way.
 
-### 3.5 Certificate Persistence After Refund
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Enroll in paid course without payment via `enrollInCourse` | Student | Low | Mitigated — payment verification in `enrollInCourse` (line 82) |
+| Race condition: two simultaneous checkout sessions for same course | Student | Low | Low — existing payment check + Stripe idempotency |
+| Webhook replay to double-enroll | External | Low | Low — `enrollInCourseInternal` checks existing enrollment |
 
-| Abuse Case | Impact | Likelihood |
-|------------|--------|------------|
-| Student completes course, gets certificate, requests refund | Retains verifiable credential without payment | Medium |
-| Systematic abuse: complete → refund → repeat across courses | Free credential farming | Low |
+### 3.4 Manual Payment
 
-### 3.6 Raw Error Object Exposure
+**Assets at Risk:** Financial records, enrollment integrity, PII (bank details, phone)
+**Trust Assumptions:** Admin reviews payment proof honestly; Cloudinary proof URLs are not publicly enumerable.
 
-| Abuse Case | Impact | Likelihood |
-|------------|--------|------------|
-| Trigger DB errors to reveal table/column names | Schema reconnaissance for further attacks | Medium |
-| Trigger Supabase errors to reveal connection details | Infrastructure fingerprinting | Low |
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Submit fake payment proof image | Student | Medium | Medium — admin must visually verify |
+| Enumerate other students' payment proof URLs | Student | Low | Low — Cloudinary URLs are long random strings |
+| Spam enrollment requests after rejection | Student | Low | Low-Medium — UNIQUE constraint allows re-requests with different status |
+
+### 3.5 Content Access
+
+**Assets at Risk:** Paid course content (videos, documents), progress integrity
+**Trust Assumptions:** RLS on `sub_materials` correctly gates full content to enrolled/instructor/admin; `timeSpent` is meaningful.
+
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Speed-run course by sending `timeSpent: 31` for all lessons | Student | Medium | **High** — trivial to automate, only 30s minimum enforced |
+| Access sub_material content without enrollment via direct Cloudinary URL | Student | Medium | Low — requires knowing the URL; not exposed in public queries |
+| Mark all lessons complete in rapid succession | Student | Medium | Medium — no per-lesson cooldown beyond 30s minimum |
+
+### 3.6 Quizzes
+
+**Assets at Risk:** Answer integrity, academic credibility, certificate validity
+**Trust Assumptions:** `quest_correct_options` table is only readable by admin client; max_attempts is atomically enforced by DB trigger.
+
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Brute-force answers across max attempts | Student | Low | Low — limited attempts, randomized option order would help |
+| Share correct answers between students out-of-band | Student | Medium | Medium — social engineering, not preventable technically |
+| Timing attack on answer validation | Student | Low | Low — all options checked regardless of correctness |
+
+### 3.7 Gamification
+
+**Assets at Risk:** Leaderboard integrity, badge legitimacy
+**Trust Assumptions:** Points are only awarded through legitimate completion flows; `awardPoints` is not directly callable by students.
+
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Inflate points by speed-running courses with `timeSpent: 31` | Student | Medium | **Medium-High** — combines with content access abuse |
+| Manipulate streak by enrolling/completing trivial free courses | Student | Low | Low — streak only tracks daily activity |
+
+### 3.8 Skills
+
+**Assets at Risk:** Skill proficiency accuracy
+**Trust Assumptions:** `updateSkillProficiency` blocks direct student calls (line 44); only internal/admin can update.
+
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Direct call to `updateSkillProficiency` as student | Student | Low | Mitigated — explicit block in code |
+| Inflate skills by completing easy courses repeatedly | Student | Low | Low — skills tied to specific courses |
+
+### 3.9 Certificates
+
+**Assets at Risk:** Credential integrity, institutional reputation
+**Trust Assumptions:** Certificate generation requires genuine course completion + quiz pass; certificate numbers are unique and non-sequential.
+
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Obtain certificate via speed-run (timeSpent abuse) | Student | Medium | **Medium** — if all lessons marked complete with min time |
+| Forge certificate by guessing certificate_number | External | Low | Low — UUIDs are not guessable |
+| Certificate data visible to all (public SELECT) | Any | Low | Low — by design for verification |
+
+### 3.10 Leaderboard
+
+**Assets at Risk:** Ranking fairness
+**Trust Assumptions:** Points are legitimately earned; leaderboard_stats is denormalized correctly.
+
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Create multiple accounts to dominate leaderboard | Anonymous | Low | Low — requires email verification per account |
+| View other students' total points and streaks | Student | Low | Low — public by design |
+
+### 3.11 Security Tools Catalog
+
+**Assets at Risk:** None significant (read-only catalog)
+**Trust Assumptions:** Data is admin-seeded; no user input stored.
+
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| SQL injection via search/filter | Student | Low | Mitigated — LIKE wildcards escaped in `getAllTools` (line 11) |
+
+### 3.12 Admin User Management
+
+**Assets at Risk:** User accounts, role assignments, platform integrity
+**Trust Assumptions:** Admin role is only assignable via DB seed; `prevent_self_privilege_change()` trigger blocks self-elevation; middleware enforces `/admin/*` access.
+
+| Abuse Case | Actor | Severity | Likelihood |
+|------------|-------|----------|------------|
+| Admin deactivates own account accidentally | Admin | Low | Low — trigger prevents self-modification of role/approval/active |
+| Compromised admin escalates another user to admin | Compromised Admin | High | Low — requires compromised credentials |
+| Non-admin calls admin server actions directly | Student/Mentor | Medium | Low — explicit role checks on critical actions; RLS on others |
 
 ---
 
 ## 4. Attack Trees
 
-### Goal 1: Compromise Admin Account
+### 4.1 Goal: Obtain Certificate Without Legitimate Learning
 
 ```
-Compromise Admin Account
-├── 1. Identify admin email [EASY — profiles SELECT USING(true)]
-├── 2. Credential attack
-│   ├── 2a. Credential stuffing (rate limited to 5/min per email) [MEDIUM]
-│   ├── 2b. Phishing (no MFA to block stolen creds) [MEDIUM]
-│   └── 2c. Password reset abuse (rate limited 3/hr) [LOW]
-└── 3. Session hijack via XSS
-    ├── 3a. Find injection point (CSP unsafe-inline allows inline scripts) [LOW]
-    └── 3b. Steal httpOnly cookie [BLOCKED — Supabase uses httpOnly cookies]
+[Obtain Certificate Fraudulently]
+├── [Speed-run all lessons] ← MEDIUM RISK
+│   ├── Call markSubMaterialCompleted with timeSpent=31 for each lesson
+│   │   └── Automate via script (enrollment ID + sub_material IDs enumerable)
+│   ├── Complete minimum quiz (pass_score threshold)
+│   │   └── Brute-force within max_attempts OR collude with other students
+│   └── Trigger completeCourse → generateCertificate
+│
+├── [Manipulate progress directly] ← LOW RISK
+│   ├── Call markSubMaterialCompleted with cross-course sub_material_id
+│   │   └── BLOCKED: enrollment ownership check + RLS UNIQUE constraint
+│   └── Direct DB manipulation
+│       └── BLOCKED: RLS prevents INSERT on progress for other enrollments
+│
+└── [Bypass quiz requirement] ← LOW RISK
+    ├── Complete course without quiz (if course has no quests)
+    │   └── ALLOWED by design — quiz only required if course has quests
+    └── Modify quest pass_score
+        └── BLOCKED: only instructor/admin can update quests
 ```
 
-### Goal 2: Access Paid Content Without Payment
+### 4.2 Goal: Access Paid Course Content Without Payment
 
 ```
-Free Access to Paid Content
-├── 1. Direct content access [BLOCKED — RLS restricts to enrolled]
-├── 2. Refund after completion [WORKS — certificate persists]
-├── 3. Bypass enrollment check
-│   ├── 3a. enrollInCourse without payment [BLOCKED — payment check]
-│   └── 3b. enrollInCourseInternal [BLOCKED — admin gate]
-└── 4. Manipulate enrollment_requests
-    └── 4a. Approve own request [BLOCKED — admin-only]
+[Access Paid Content Free]
+├── [Bypass payment verification] ← LOW RISK
+│   ├── Call enrollInCourse directly without payment
+│   │   └── BLOCKED: payment check in enrollInCourse (line 82)
+│   ├── Call enrollInCourseInternal as non-admin
+│   │   └── BLOCKED: admin role check (line 130)
+│   └── Manipulate enrollment_requests approval
+│       └── BLOCKED: admin-only approval
+│
+├── [Access content without enrollment] ← LOW-MEDIUM RISK
+│   ├── Guess Cloudinary video URLs
+│   │   └── LOW: URLs are long random strings, not indexed
+│   ├── Read sub_materials via RLS gap
+│   │   └── LOW: RLS gates full content to enrolled/instructor/admin
+│   └── Preview content (if preview flag set)
+│       └── ALLOWED by design — preview sub_materials are public
+│
+└── [Exploit refund flow] ← LOW RISK
+    ├── Pay → get enrolled → request Stripe refund → retain access
+    │   └── BLOCKED: charge.refunded webhook deletes enrollment
+    └── Pay → download all content → request refund
+        └── LOW: content is streaming (Cloudinary), not downloadable files
 ```
 
-### Goal 3: Exfiltrate User Data
+### 4.3 Goal: Escalate Privileges (Student → Admin)
 
 ```
-Harvest User Data
-├── 1. Query profiles table (authenticated) [WORKS — all emails/names/roles exposed]
-├── 2. Trigger verbose errors for schema info [POSSIBLE — raw error objects returned]
-└── 3. Access payment records [BLOCKED — RLS restricts to own + admin]
+[Privilege Escalation]
+├── [Modify own profile role] ← LOW RISK
+│   ├── Direct profile UPDATE via Supabase client
+│   │   └── BLOCKED: prevent_self_privilege_change() DB trigger
+│   ├── Manipulate raw_user_meta_data at signup
+│   │   └── BLOCKED: trigger only auto-approves admin, admin requires seed
+│   └── Call updateCourse/approveCourse as student
+│       └── BLOCKED: explicit role checks
+│
+├── [Exploit RLS-only actions] ← MEDIUM RISK
+│   ├── Call getAllCoursesAdmin as non-admin
+│   │   └── LOW: RLS filters results (returns empty), no error
+│   ├── Call updateMaterial/deleteSubMaterial on other's course
+│   │   └── LOW: RLS blocks, but no app-level error feedback
+│   └── Call getCoursePayments for other instructor's course
+│       └── MEDIUM: RLS should block, but no explicit check (line 168)
+│
+└── [Session/token manipulation] ← LOW RISK
+    ├── Forge JWT
+    │   └── BLOCKED: Supabase validates JWT signature server-side
+    ├── Reuse expired session
+    │   └── BLOCKED: middleware calls getUser() which validates token
+    └── Exploit OAuth callback
+        └── BLOCKED: code exchange is one-time, Google SSO restricted to students
+```
+
+### 4.4 Goal: Manipulate Leaderboard/Gamification
+
+```
+[Leaderboard Manipulation]
+├── [Inflate points artificially] ← MEDIUM RISK
+│   ├── Speed-run courses (timeSpent=31 per lesson)
+│   │   └── MEDIUM: awards 200-800 points per course completion
+│   ├── Retake quizzes for points
+│   │   └── LOW: max_attempts limits retakes; points may only award on first pass
+│   └── Create multiple accounts
+│       └── LOW: requires unique email + verification per account
+│
+├── [Manipulate streak] ← LOW RISK
+│   ├── Automate daily activity (mark one lesson/day)
+│   │   └── LOW: legitimate use pattern, hard to distinguish
+│   └── Reset streak counter
+│       └── BLOCKED: leaderboard_stats only writable by admin (RLS)
+│
+└── [Direct points injection] ← LOW RISK
+    ├── Call awardPoints directly
+    │   └── LOW: internal function, no direct student-facing endpoint
+    └── Modify point_history
+        └── BLOCKED: RLS restricts writes
 ```
 
 ---
 
-## 5. Priority Targets for Scanning
+## 5. Priority Targets for Step 3 Scanning
 
-These are the remaining areas worth scanning in subsequent cycles:
-
-| # | Target | Category | Why |
-|---|--------|----------|-----|
-| 1 | `profiles` RLS policy (SELECT USING true) | Data Exposure | All user PII readable by any authenticated user |
-| 2 | Checkout route `x-forwarded-for` IP extraction | Rate Limit Bypass | Attacker-controlled header used as rate limit key |
-| 3 | Raw error returns in server actions (47 instances) | Information Disclosure | Caught exceptions passed directly to client |
-| 4 | CSP `unsafe-inline` for script-src and style-src | Client-Side | Weakens XSS protections |
-| 5 | Admin accounts — no MFA enforcement | Authentication | Single-factor auth on highest-privilege role |
-| 6 | Certificate lifecycle after refund | Business Logic | No revocation on enrollment deletion |
-| 7 | `updateMaterial` / `createSubMaterial` — no app-layer ownership check | Access Control (Defense-in-Depth) | Relies solely on RLS; if RLS misconfigured, no fallback |
-| 8 | `checkAndAwardBadges` RLS context | Logic | May silently fail if INSERT policies require admin |
-| 9 | `ignoreBuildErrors: true` in next.config.js | Code Quality | Type-unsafe code may reach production |
-| 10 | Image domain allowlist (5+ external domains) | SSRF/Content Injection | Broad img-src allows content from multiple origins |
+| Priority | Target | File/Location | Vulnerability Class | Rationale |
+|----------|--------|---------------|--------------------:|-----------|
+| 1 | RLS-only authorization on material CRUD | `lib/actions/courses.ts:474-571` | Access Control (IDOR) | 6 functions with no app-level ownership check; single point of failure if RLS misconfigured |
+| 2 | `timeSpent` client-controlled value | `lib/actions/courses.ts:200` | Business Logic | Trivially spoofable; enables certificate fraud and points inflation |
+| 3 | Rate limit key using `x-forwarded-for` | `app/api/checkout/route.ts:25` | Rate Limit Bypass | Header spoofable without trusted proxy; shared bucket on `'unknown'` fallback |
+| 4 | RLS-only authorization on quest question CRUD | `lib/actions/quests.ts:378-435` | Access Control (IDOR) | `createQuestion`, `updateQuestion`, `deleteQuestion` — no app-level ownership |
+| 5 | `getCoursePayments` no ownership check | `lib/actions/payments.ts:168` | Info Disclosure | Financial data exposure if RLS policy has gaps |
+| 6 | CSP `unsafe-inline` for scripts | `next.config.js:67` | XSS (Injection) | Weakens CSP protection; stored XSS in course content could execute |
+| 7 | `quest_correct_options` admin client usage | `lib/actions/quests.ts:55` | Data Exposure | Correct answers fetched server-side; verify no leakage in response |
+| 8 | Webhook enrollment failure (no retry) | `app/api/webhooks/stripe/route.ts:97` | Business Logic | Payment succeeds but enrollment fails — orphaned payment |
+| 9 | `typescript.ignoreBuildErrors: true` | `next.config.js:5` | Misconfig | Type errors masked; potential runtime type confusion |
+| 10 | Profile data public SELECT (`USING (true)`) | RLS policy on `profiles` | Info Disclosure | Email, full_name, avatar of all users readable by any authenticated user |
+| 11 | `createOption`/`updateOption` uses admin client for `is_correct` | `lib/actions/quests.ts:438-496` | Access Control | RLS-only check on who can call; admin client bypasses RLS for the write |
+| 12 | Enrollment request re-submission after rejection | `lib/actions/enrollment-requests.ts:33` | Business Logic (DoS) | UNIQUE on (student_id, course_id, status) allows multiple rejected rows |
+| 13 | `img-src https:` in CSP | `next.config.js:67` | SSRF/Exfiltration | Any HTTPS image loadable; potential data exfiltration via image src |
+| 14 | Partial refund handling | `app/api/webhooks/stripe/route.ts:130` | Business Logic | Partial refund still revokes full access — may be intentional but worth verifying |
+| 15 | `listUsers()` in check-user returns all auth users | `app/api/check-user/route.ts:44` | Performance/DoS | No pagination; large user base could cause memory issues |
 
 ---
 
 ## 6. Trust Boundaries
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        INTERNET (Untrusted)                          │
-│  [Browser] ──── [CDN/Proxy] ──── x-forwarded-for (SPOOFABLE)       │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │ TLS
-┌──────────────────────────────▼──────────────────────────────────────┐
-│                    BOUNDARY 1: Edge/Middleware                        │
-│  • Session validation (getUser)                                      │
-│  • Route protection (role checks)                                    │
-│  • Deactivated user blocking                                         │
-│  • Security headers (CSP with unsafe-inline)                         │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────────┐
-│                    BOUNDARY 2: Application Layer                      │
-│  • Server Actions (ownership checks, Zod validation)                 │
-│  • API Routes (CSRF check, rate limiting)                            │
-│  • Error handling (RAW ERRORS LEAK across this boundary)             │
-│  • Defense-in-depth GAPS: some mutations skip ownership checks       │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────────┐
-│                    BOUNDARY 3: Database (RLS)                         │
-│  • Row Level Security on all tables                                  │
-│  • profiles: SELECT open to all authenticated (OVER-PERMISSIVE)      │
-│  • DB triggers: role escalation prevention, max attempts             │
-│  • Admin client: used for scoring, enrollment, payments              │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────────┐
-│                    BOUNDARY 4: External Services                      │
-│  • Stripe (webhook signature verified)                               │
-│  • Cloudinary (media hosting — URLs stored in DB)                    │
-│  • Supabase Auth (password hashing, OAuth)                           │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          INTERNET (Untrusted)                            │
+│                                                                         │
+│  [Browser/Client]  ←──→  [Stripe Hosted Checkout]                       │
+│        │                         │                                      │
+└────────┼─────────────────────────┼──────────────────────────────────────┘
+         │ HTTPS                   │ Webhook (signature-verified)
+═════════╪═════════════════════════╪══════════ TRUST BOUNDARY 1 ══════════
+         │                         │           (Network Edge)
+┌────────┼─────────────────────────┼──────────────────────────────────────┐
+│        ▼                         ▼                                      │
+│  ┌──────────────────────────────────────────┐                           │
+│  │         Next.js Middleware (middleware.ts) │                          │
+│  │  • JWT validation (getUser)               │                          │
+│  │  • Route protection                       │                          │
+│  │  • Role enforcement (admin/mentor)        │                          │
+│  │  • Deactivated/unapproved user blocking   │                          │
+│  └──────────────┬───────────────────────────┘                           │
+│                 │                                                        │
+│  ═══════════════╪════════════════════════════ TRUST BOUNDARY 2 ═════════ │
+│                 │                (Authenticated Zone)                    │
+│                 ▼                                                        │
+│  ┌──────────────────────────────────────────┐                           │
+│  │       Server Actions / API Routes         │                          │
+│  │  • Session verification (getUser)         │                          │
+│  │  • Role checks (explicit on some)         │                          │
+│  │  • Input validation (Zod on critical)     │                          │
+│  │  • Rate limiting (auth + checkout)        │                          │
+│  └──────────┬──────────────┬────────────────┘                           │
+│             │              │                                             │
+│  ═══════════╪══════════════╪═════════════════ TRUST BOUNDARY 3 ═════════ │
+│             │              │        (Privileged Operations)              │
+│             ▼              ▼                                             │
+│  ┌─────────────────┐  ┌─────────────────────┐                          │
+│  │ Supabase Client │  │ Supabase Admin Client│                          │
+│  │ (anon key + JWT)│  │ (service_role key)   │                          │
+│  │ • RLS enforced  │  │ • RLS BYPASSED       │                          │
+│  │ • User context  │  │ • Used for:          │                          │
+│  └────────┬────────┘  │   - correct answers  │                          │
+│           │            │   - payment updates  │                          │
+│           │            │   - auto-approval    │                          │
+│           │            │   - rate limits      │                          │
+│           │            │   - refund enrollment│                          │
+│           │            └──────────┬───────────┘                          │
+│           │                       │                                      │
+│  ═════════╪═══════════════════════╪══════════ TRUST BOUNDARY 4 ═════════ │
+│           │                       │           (Data Layer)               │
+│           ▼                       ▼                                      │
+│  ┌──────────────────────────────────────────┐                           │
+│  │          PostgreSQL (Supabase)            │                           │
+│  │  • RLS policies (26 tables)              │                           │
+│  │  • DB triggers (5 triggers)              │                           │
+│  │  • GRANT ALL to authenticated role       │                           │
+│  └──────────────────────────────────────────┘                           │
+│                                                                         │
+│                    DEPLOYMENT ENVIRONMENT                                │
+│              (Netlify Serverless / Docker)                               │
+└─────────────────────────────────────────────────────────────────────────┘
+
+External Services (Trusted Third Parties):
+  • Supabase Auth — JWT issuance, email verification, OAuth
+  • Stripe — Payment processing, webhook delivery
+  • Cloudinary — Media hosting (videos, documents, payment proofs)
+  • Google — OAuth provider (student SSO only)
 ```
 
 ---
 
 ## 7. Assumptions & Gaps
 
-### Assumptions
+### Assumptions (Cannot Verify Statically)
 
-| # | Assumption | Risk if Wrong |
+| # | Assumption | Risk if False |
 |---|-----------|---------------|
-| 1 | Supabase Auth cookies are httpOnly and secure | XSS could steal sessions |
-| 2 | React's JSX escaping prevents stored XSS in course content | unsafe-inline CSP makes XSS exploitable if escaping fails |
-| 3 | RLS policies are correctly configured for all tables | App-layer gaps (updateMaterial, createSubMaterial) become exploitable |
-| 4 | Stripe webhook signatures are validated correctly | Payment bypass / fake enrollment |
-| 5 | Deployment sits behind a trusted reverse proxy that sets x-forwarded-for correctly | Rate limit on checkout is bypassable if not |
-| 6 | `checkAndAwardBadges` INSERT operations succeed despite user-context RLS | Gamification may silently break |
+| 1 | RLS policies are correctly configured for all 26 tables | **High** — `GRANT ALL` means RLS is the sole access control; any misconfigured policy = full table access |
+| 2 | Supabase Auth JWT validation is cryptographically sound | High — session forgery possible |
+| 3 | `x-forwarded-for` is set by a trusted proxy in production | **Medium** — rate limit bypass on checkout if not |
+| 4 | Cloudinary URLs are sufficiently random/unguessable | Medium — paid content accessible without enrollment |
+| 5 | Stripe webhook secret is properly configured and rotated | Medium — forged webhooks could grant free enrollment |
+| 6 | `SUPABASE_SERVICE_ROLE_KEY` is not exposed in client bundles | **High** — full DB bypass if leaked |
+| 7 | The `prevent_self_privilege_change()` trigger covers all escalation vectors | Medium — if trigger has edge cases, self-elevation possible |
+| 8 | `NEXT_PUBLIC_APP_URL` matches the actual deployment origin | Low — CSRF check would fail or be bypassable |
+| 9 | Email verification links are not replayable | Low — Supabase handles this |
+| 10 | Docker/Netlify deployment does not expose `.env` or source maps | Medium — secret leakage |
 
-### Gaps (Cannot Verify Without Runtime Testing)
+### Gaps (Cannot Determine from Static Analysis)
 
-| # | Gap | Impact |
-|---|-----|--------|
-| 1 | Whether `profiles` SELECT policy is intentional or oversight | May be "by design" for leaderboard display, but exposes emails |
-| 2 | Whether badge/skill INSERT policies actually allow user-context writes | Could cause silent gamification failures |
-| 3 | Whether `quest_attempts` DELETE policy exists for rollback | Race condition rollback may fail silently |
-| 4 | Actual error object contents returned to client | Need runtime testing to confirm severity of info leak |
-| 5 | Whether reverse proxy strips/overwrites x-forwarded-for | Deployment-dependent; cannot assess from code alone |
-| 6 | Certificate verification endpoint behavior after enrollment deletion | Need to test if verification URL still resolves |
+| # | Gap | Why It Matters |
+|---|-----|----------------|
+| 1 | Actual RLS policy SQL not fully audited in this model | Need to verify each policy's `USING` and `WITH CHECK` clauses match intended access |
+| 2 | No visibility into Supabase Auth configuration (password policy, MFA, session duration) | Weak session config could enable session hijacking |
+| 3 | Cloudinary upload permissions and signed URL configuration unknown | Could allow unauthorized uploads or content access |
+| 4 | No audit log review for admin actions beyond code-level logging | Compromised admin actions may go undetected |
+| 5 | Rate limit table cleanup/TTL mechanism not verified | Table could grow unbounded if cleanup fails |
+| 6 | No load testing data — unknown behavior under concurrent quiz submissions | Race conditions in max_attempts may be exploitable under load |
+| 7 | Stripe webhook retry behavior on 500 errors | Could cause duplicate enrollments if idempotency not handled |
+| 8 | Whether `ignoreBuildErrors: true` masks any security-relevant type errors | Type confusion could lead to runtime vulnerabilities |
+| 9 | Production CORS configuration (Supabase project settings) | Misconfigured CORS could allow cross-origin API access |
+| 10 | Whether Supabase realtime subscriptions are enabled and what data they expose | Could leak data changes to unauthorized subscribers |
 
 ---
 
-## Summary Assessment
+## Summary
 
-The platform is **well-hardened** after 5 cycles. All Critical and High severity issues have been remediated with defense-in-depth (DB triggers, admin gates, persistent rate limiting, fails-closed patterns).
+This is a **well-hardened application** after 5 security assessment cycles. The remaining attack surface is primarily:
 
-**Remaining risk is Medium/Low**, concentrated in:
-1. **Information disclosure** — profiles table over-exposure + raw error leakage
-2. **Authentication depth** — no MFA on admin, combined with easy admin identification
-3. **Header trust** — x-forwarded-for used for rate limiting without proxy validation
-4. **CSP weakness** — unsafe-inline reduces XSS defense effectiveness
-5. **Business logic edge case** — certificates survive refunds
+1. **Defense-in-depth gaps** — Multiple server actions rely solely on RLS without app-level authorization checks. This is not a vulnerability if RLS is correct, but creates a single point of failure.
 
-None of these individually constitute a Critical vulnerability, but the combination of (1) + (2) creates a viable attack chain: enumerate admin emails → credential stuff/phish → full compromise with no MFA barrier.
+2. **Business logic abuse** — The `timeSpent` validation (30s minimum) is trivially bypassable, enabling certificate fraud and leaderboard manipulation. This is the highest-impact remaining issue.
+
+3. **Rate limit bypass potential** — The `x-forwarded-for` key for checkout rate limiting is spoofable without a trusted proxy configuration.
+
+4. **Information disclosure** — Public profile SELECT policy exposes all user emails; `getCoursePayments` lacks explicit ownership verification.
+
+**Recommended focus for Step 3 scanning:** Access control (RLS verification), business logic (timeSpent, enrollment flows), and misconfiguration (CSP, TypeScript build errors, rate limit keys).

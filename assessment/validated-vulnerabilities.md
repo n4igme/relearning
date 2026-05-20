@@ -1,186 +1,148 @@
 # Validated Vulnerability Findings
 
 **Date**: 2026-05-21
-**Based on**: vulnerabilities.md (13 findings from cycle 5 scan)
+**Based on**: vulnerabilities.md (19 findings from cycle 6 scan)
 **Validation method**: Source code re-review and data flow tracing
 
 ## Validation Summary
 
 | Original Count | Confirmed | Downgraded | False Positive | Needs Dynamic Testing | Duplicates Merged |
 |---------------|-----------|------------|----------------|----------------------|-------------------|
-| 13 | 6 | 2 | 1 | 1 | 3 |
+| 19 | 7 | 3 | 2 | 1 | 6 |
 
 ## ID Mapping
 
 | Final ID | Original ID | Scanner |
 |----------|-------------|---------|
-| VULN-001 | VULN-ACCESS-CONTROL-001 + VULN-ACCESS-CONTROL-002 | vuln-access-control |
-| VULN-002 | VULN-DATA-EXPOSURE-001 | vuln-data-exposure |
-| VULN-003 | VULN-LOGIC-001 | vuln-logic |
-| VULN-004 | VULN-AUTHN-001 | vuln-authn-session |
-| VULN-005 | VULN-MISCONFIG-001 | vuln-misconfig |
-| VULN-006 | VULN-ACCESS-CONTROL-003 | vuln-access-control |
+| VULN-001 | VULN-LOGIC-001 | vuln-logic |
+| VULN-002 | VULN-ACCESS-CONTROL-001 + VULN-DATA-EXPOSURE-002 | vuln-access-control, vuln-data-exposure |
+| VULN-003 | VULN-AUTHN-001 | vuln-authn-session |
+| VULN-004 | VULN-LOGIC-003 | vuln-logic |
+| VULN-005 | VULN-DATA-EXPOSURE-001 | vuln-data-exposure |
+| VULN-006 | VULN-LOGIC-002 | vuln-logic |
+| VULN-007 | VULN-MISCONFIG-001 | vuln-misconfig |
 
 ---
 
 ## Confirmed Findings
 
-### VULN-001: User Profile Data (Emails, Roles) Exposed to All Authenticated Users
+### VULN-001: Client-Controlled timeSpent Enables Certificate Fraud on Quiz-less Courses
 
 **Severity**: Medium
-**Category**: Information Disclosure
-**Location**: `database/supabase-schema.sql:354-355`, `lib/actions/gamification.ts:265-268`
-**CWE**: CWE-200 (Exposure of Sensitive Information)
+**Original Severity**: High → **Adjusted**: Medium
+**Category**: Business Logic Bypass
+**Location**: `lib/actions/courses.ts:180` (markSubMaterialCompleted), `lib/actions/courses.ts:326` (completeCourse)
+**CWE**: CWE-20 (Improper Input Validation)
 
 **Validation Notes**:
-Re-read profiles RLS policy: `FOR SELECT USING (true)` — any authenticated user can query all profiles. The `getLeaderboard()` function at line 265 explicitly selects `full_name, email` from profiles and returns it to the client. This means any student viewing the leaderboard sees all participants' email addresses.
+Re-read `markSubMaterialCompleted` at line 180: accepts `timeSpent` parameter from client, validates only `>= 30`. Re-read `completeCourse` at line 326: if `quests.length > 0`, requires at least one passed quiz. If course has ZERO published quizzes, certificate is issued based on progress alone.
 
-Additionally, any authenticated user can directly query: `supabase.from('profiles').select('email, role, full_name')` to enumerate all users, their roles, and emails.
+Attack requires: enrolled in a course with no published quizzes. For paid courses, payment is still required. For free courses, no barrier exists.
+
+Downgraded from High to Medium because:
+- Paid courses still require payment (financial barrier)
+- Courses WITH quizzes are protected (quiz pass required)
+- Only affects quiz-less courses (design gap, not universal bypass)
+- Certificate still shows the student "completed" the course — just without time investment
 
 **Data Flow Trace**:
-1. Input: Any authenticated user visits leaderboard page or queries profiles directly
-2. Through: `getLeaderboard()` → Supabase query with profiles join
-3. Sink: Client receives `{ profiles: { full_name, email } }` for all leaderboard entries
-4. Sanitization: None — RLS allows all authenticated SELECT
+1. Input: Client calls `markSubMaterialCompleted(enrollmentId, subMaterialId, 31)`
+2. Through: Validates `timeSpent >= 30` (passes), marks lesson complete
+3. Sink: `updateCourseProgress()` → progress reaches 100% → `completeCourse()` → no quiz check (0 quests) → `generateCertificate()`
+4. Sanitization: Only `>= 30` check; no server-side timing validation
 
 **Confirmed PoC**:
 ```javascript
-// Direct query from browser:
-const { data } = await supabase.from('profiles').select('id, email, role, full_name')
-// Returns ALL users with emails and roles
+// Enrolled in a free course with no quizzes, 5 lessons:
+const lessons = [subMat1, subMat2, subMat3, subMat4, subMat5]
+for (const id of lessons) {
+  await markSubMaterialCompleted(enrollmentId, id, 31) // 31 seconds each
+}
+// Total: 155 seconds → certificate issued (should take hours of study)
 ```
 
-**Impact**: User enumeration (all emails + roles). Enables targeted phishing against admin accounts (identifiable by role). Violates user privacy expectations.
+**Impact**: Students can earn certificates for quiz-less courses in under 3 minutes. Devalues certificates. Limited to courses without quizzes.
 
 **Remediation**:
-```sql
--- Restrict profiles SELECT to own profile + public fields only
-DROP POLICY "Public profiles are viewable by everyone" ON public.profiles;
+```typescript
+// Option A: Require at least one quiz for certificate-eligible courses
+if (!quests || quests.length === 0) {
+  // Issue "participation" certificate only, not "completion" certificate
+  await generateCertificate(studentId, courseId, 'participation')
+  return
+}
 
-CREATE POLICY "Users can view own full profile"
-  ON public.profiles FOR SELECT
-  USING (id = auth.uid());
-
-CREATE POLICY "Public profile fields viewable by authenticated"
-  ON public.profiles FOR SELECT
-  USING (auth.uid() IS NOT NULL);
--- Note: This still allows SELECT but consider creating a view
--- that only exposes full_name (not email/role) for non-self queries
+// Option B: Track server-side timestamps
+// Record when lesson was first opened, require elapsed time >= video_duration
 ```
 
-Also fix leaderboard to not return emails:
+---
+
+### VULN-002: User Profiles (Emails, Roles) Exposed to All Authenticated Users
+
+**Severity**: Medium
+**Category**: Information Disclosure
+**Location**: `database/supabase-schema.sql:354`, `lib/actions/gamification.ts:266`
+**CWE**: CWE-200 (Exposure of Sensitive Information)
+
+**Validation Notes**:
+Confirmed: profiles RLS `FOR SELECT USING (true)` exposes all columns. `getLeaderboard()` at line 266 explicitly selects and returns `email` to the client. Any authenticated user can also query profiles directly via browser Supabase client.
+
+**Data Flow Trace**:
+1. Input: Authenticated user views leaderboard or queries profiles
+2. Through: `getLeaderboard()` → Supabase join on profiles → returns `{ full_name, email }`
+3. Sink: Client receives all users' emails
+4. Sanitization: None
+
+**Confirmed PoC**:
+```javascript
+const { data } = await supabase.from('profiles').select('email, role, full_name')
+// Returns ALL users with emails and roles — identifies admins
+```
+
+**Impact**: User enumeration, admin identification for targeted phishing, privacy violation.
+
+**Remediation**:
 ```typescript
-// lib/actions/gamification.ts:265
+// lib/actions/gamification.ts:266 — remove email
 profiles:student_id (
   full_name
-  // Remove: email
 )
 ```
 
 ---
 
-### VULN-002: Server Actions Return Raw Error Objects to Client (118 locations)
-
-**Severity**: Medium
-**Category**: Information Disclosure
-**Location**: `lib/actions/courses.ts` (42), `lib/actions/enrollment-requests.ts` (29), `lib/actions/quests.ts` (29), `lib/actions/gamification.ts` (9), `lib/actions/skills.ts` (6), `lib/actions/tools.ts` (3)
-**CWE**: CWE-209 (Generation of Error Message Containing Sensitive Information)
-
-**Validation Notes**:
-Confirmed 118 instances of `return { success: false, error }` where `error` is the raw caught exception. Supabase errors include table names, column names, constraint names, and RLS policy messages. These are serialized by Next.js server actions to the client.
-
-**Impact**: Schema information disclosure. Aids attacker reconnaissance. Example leaked info: `"new row violates row-level security policy for table \"enrollments\""`.
-
-**Remediation**: Replace with generic messages in all catch blocks:
-```typescript
-} catch (error) {
-  console.error('Operation failed:', error)
-  return { success: false, error: 'Operation failed. Please try again.' }
-}
-```
-
----
-
-### VULN-003: Checkout Rate Limit Bypassable via x-forwarded-for Spoofing
-
-**Severity**: Medium
-**Category**: Insufficient Anti-Automation
-**Location**: `app/api/checkout/route.ts:21`
-**CWE**: CWE-348 (Use of Less Trusted Source)
-
-**Validation Notes**:
-Re-read line 21: `const ip = req.headers.get('x-forwarded-for') || 'unknown'`. The `x-forwarded-for` header is client-controlled. An attacker can set a different IP on each request to bypass the 5/min rate limit entirely.
-
-In Netlify/Vercel deployments, the platform typically overwrites this header with the real client IP. In Docker/self-hosted deployments without a trusted reverse proxy, this is directly spoofable.
-
-**Impact**: Conditional — depends on deployment. In self-hosted Docker without trusted proxy, checkout rate limit is completely bypassable.
-
-**Remediation**:
-```typescript
-// Use a more reliable IP source, or combine with user ID
-const ip = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-// Better: rate limit by authenticated user ID instead of IP
-const { data: { user } } = await supabase.auth.getUser()
-const rateLimitKey = user ? `checkout:${user.id}` : `checkout:${ip}`
-```
-
----
-
-### VULN-004: No Multi-Factor Authentication for Admin Accounts
+### VULN-003: No Multi-Factor Authentication for Admin Accounts
 
 **Severity**: Medium
 **Category**: Insufficient Authentication
-**Location**: `lib/actions/auth.ts` (entire auth flow), `middleware.ts`
+**Location**: Platform-wide
 **CWE**: CWE-308 (Use of Single-factor Authentication)
 
 **Validation Notes**:
-No MFA implementation found anywhere in the codebase. Admin accounts (which can approve users, manage courses, view all data) are protected only by email/password. Combined with VULN-001 (admin emails exposed), this creates a viable attack chain: enumerate admin email → credential stuff/phish → no MFA barrier → full admin access.
+No MFA implementation found. Admin accounts protected by password only. Combined with VULN-002 (admin emails exposed), creates attack chain: enumerate → phish → no MFA → full access.
 
-**Impact**: If admin credentials are compromised (phishing, credential stuffing, password reuse), there is no second factor to prevent account takeover.
+**Impact**: If admin credentials compromised, no second factor prevents takeover.
 
-**Remediation**: Enable Supabase Auth MFA (TOTP) for admin accounts:
-```typescript
-// Require MFA verification for admin actions
-const { data: factors } = await supabase.auth.mfa.listFactors()
-if (profile.role === 'admin' && (!factors?.totp || factors.totp.length === 0)) {
-  redirect('/admin/setup-mfa')
-}
-```
+**Remediation**: Enable Supabase Auth MFA (TOTP) for admin role.
 
 ---
 
-### VULN-005: CSP unsafe-inline Weakens XSS Defense-in-Depth
+### VULN-004: Certificates Persist After Refund
 
-**Severity**: Low
-**Original Severity**: Medium → **Adjusted**: Low
-**Category**: Security Misconfiguration
-**Location**: `next.config.js:56`
-**CWE**: CWE-693 (Protection Mechanism Failure)
-
-**Validation Notes**:
-CSP includes `'unsafe-inline'` for scripts. No XSS vectors exist (confirmed across 5 scan cycles — React auto-escapes, no dangerouslySetInnerHTML). Downgraded to Low because: purely theoretical, no current exploit path, required by Next.js for hydration.
-
-**Impact**: Theoretical only.
-
-**Remediation**: Implement nonce-based CSP when feasible (medium effort).
-
----
-
-### VULN-006: Certificates Persist After Refund
-
-**Severity**: Low
+**Severity**: Medium
 **Category**: Business Logic
-**Location**: `app/api/webhooks/stripe/route.ts:157-185`
+**Location**: `app/api/webhooks/stripe/route.ts:175-190`
 **CWE**: CWE-841 (Improper Enforcement of Behavioral Workflow)
 
 **Validation Notes**:
-Re-read refund handler. It deletes the enrollment but does NOT delete or invalidate the certificate. A student who completed a course, received a certificate, then got a refund retains a valid certificate with a verification URL.
+Re-read refund handler. Enrollment is deleted (line 175-180) but no certificate deletion. Student retains verifiable certificate after refund.
 
-**Impact**: Credential validity after refund. Low severity because: student DID complete the course and pass quizzes before refunding — the learning was real, only the payment was reversed.
+**Impact**: Students can complete course → get certificate → refund → keep certificate. Revenue loss + credential validity issue.
 
 **Remediation**:
 ```typescript
-// Add after enrollment deletion in handleChargeRefunded:
+// Add after enrollment deletion:
 await supabase.from('certificates').delete()
   .eq('student_id', payment.student_id)
   .eq('course_id', payment.course_id)
@@ -188,13 +150,68 @@ await supabase.from('certificates').delete()
 
 ---
 
+### VULN-005: Server Actions Return Raw Error Objects (118 Locations)
+
+**Severity**: Medium
+**Category**: Information Disclosure
+**Location**: `lib/actions/courses.ts` (42), `lib/actions/quests.ts` (29), `lib/actions/enrollment-requests.ts` (29), others
+**CWE**: CWE-209
+
+**Validation Notes**:
+Confirmed 118 instances returning raw Supabase errors containing table/column/constraint names.
+
+**Impact**: Schema disclosure aids reconnaissance.
+
+**Remediation**: Replace with generic error messages; log details server-side.
+
+---
+
+### VULN-006: Checkout Rate Limit Bypassable via x-forwarded-for Spoofing
+
+**Severity**: Low
+**Original Severity**: Medium → **Adjusted**: Low
+**Category**: Insufficient Anti-Automation
+**Location**: `app/api/checkout/route.ts:21`
+**CWE**: CWE-348
+
+**Validation Notes**:
+Confirmed `x-forwarded-for` is used as rate limit key. However, downgraded because:
+- Checkout requires authentication (user ID could be used instead)
+- Netlify/Vercel overwrite this header in production
+- Even if bypassed, attacker still needs valid auth + Stripe still requires payment completion
+
+**Impact**: Conditional — only exploitable in self-hosted Docker without trusted proxy.
+
+**Remediation**: Rate limit by user ID instead of IP.
+
+---
+
+### VULN-007: CSP unsafe-inline for Scripts
+
+**Severity**: Low
+**Category**: Security Misconfiguration
+**Location**: `next.config.js:56`
+**CWE**: CWE-693
+
+**Validation Notes**:
+No XSS vectors exist (confirmed across 6 scan cycles). Purely theoretical defense-in-depth gap.
+
+**Impact**: Theoretical only.
+
+**Remediation**: Nonce-based CSP when feasible.
+
+---
+
 ## Downgraded Findings
 
-### VULN-AUTHN-002: Password Policy Length-Only (Medium → Low)
-**Reason**: Supabase Auth has its own password requirements. The app-layer check (8 chars) is a minimum — Supabase may enforce additional rules at the auth service level. Also, credential stuffing is rate-limited (5/min, fails closed).
+### VULN-LOGIC-001 (timeSpent): High → Medium
+**Reason**: Only affects quiz-less courses. Paid courses still require payment. Quiz-bearing courses are protected. Limited blast radius.
 
-### VULN-MISCONFIG-002: ignoreBuildErrors (Medium → Informational)
-**Reason**: Not a security vulnerability — it's a development practice issue. Type errors don't create exploitable paths (confirmed across 5 cycles of scanning).
+### VULN-LOGIC-002 (IP spoofing): Medium → Low
+**Reason**: Requires self-hosted deployment without trusted proxy. Production platforms (Netlify/Vercel) overwrite the header. Auth still required.
+
+### VULN-DEPENDENCY-001: Medium → Low
+**Reason**: All 12 npm audit findings are in dev/build dependencies not shipped to production.
 
 ---
 
@@ -202,7 +219,8 @@ await supabase.from('certificates').delete()
 
 | Original ID | Title | Reason Eliminated |
 |-------------|-------|-------------------|
-| VULN-CLIENT-SIDE-001 | Open redirect | Confirmed mitigated — `${origin}${next}` stays on same origin |
+| VULN-CLIENT-SIDE-001 | Open redirect | `${origin}${next}` stays on same origin — confirmed mitigated |
+| VULN-LOGIC-004 | Webhook deduplication | Stripe handles idempotency via event IDs; duplicate delivery is Stripe's responsibility |
 
 ---
 
@@ -210,7 +228,7 @@ await supabase.from('certificates').delete()
 
 | Original ID | Title | What to Test | Why Static Analysis Is Insufficient |
 |-------------|-------|-------------|-------------------------------------|
-| VULN-LOGIC-001 | x-forwarded-for spoofing | Test in actual Netlify/Docker deployment | Platform may overwrite header; behavior depends on reverse proxy config |
+| VULN-LOGIC-002 | x-forwarded-for spoofing | Test header behavior in actual Netlify deployment | Platform may overwrite; depends on infrastructure config |
 
 ---
 
@@ -218,9 +236,9 @@ await supabase.from('certificates').delete()
 
 | Kept Finding | Merged From | Reason |
 |-------------|-------------|--------|
-| VULN-001 | VULN-ACCESS-CONTROL-001, VULN-ACCESS-CONTROL-002 | Same root cause (profiles SELECT USING(true)) — leaderboard email exposure is a symptom |
-| (Eliminated) | VULN-DEPENDENCY-001, VULN-DOS-001 | Dev-only deps + single unbounded query — not exploitable, hardening only |
-| (Eliminated) | VULN-LOGIC-002 | Webhook deduplication — Stripe handles retries with idempotency keys; not an app vulnerability |
+| VULN-002 | VULN-ACCESS-CONTROL-001, VULN-DATA-EXPOSURE-002 | Same root cause: profiles SELECT USING(true) |
+| (Eliminated) | VULN-ACCESS-CONTROL-002, -003, -004 | RLS-only auth gaps — defense-in-depth, not exploitable |
+| (Eliminated) | VULN-DOS-001, -002, VULN-MISCONFIG-002, VULN-AUTHN-002 | Low/informational hardening items |
 
 ---
 
@@ -230,6 +248,6 @@ await supabase.from('certificates').delete()
 |----------|-------|-----|
 | Critical | 0 | — |
 | High | 0 | — |
-| Medium | 4 | VULN-001, VULN-002, VULN-003, VULN-004 |
-| Low | 2 | VULN-005, VULN-006 |
-| **Total Confirmed** | **6** | |
+| Medium | 5 | VULN-001, VULN-002, VULN-003, VULN-004, VULN-005 |
+| Low | 2 | VULN-006, VULN-007 |
+| **Total Confirmed** | **7** | |
