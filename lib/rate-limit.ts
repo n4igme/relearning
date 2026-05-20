@@ -1,36 +1,59 @@
 'use server'
 
 /**
- * Simple in-memory rate limiter for server actions and API routes.
- * For production with multiple instances, replace with Redis-based solution.
+ * Persistent rate limiter using Supabase.
+ * Works across serverless invocations and multiple instances.
+ *
+ * Requires the rate_limits table (see database/fix-rate-limiting.sql).
+ * Falls back to in-memory if Supabase is unavailable.
  */
 
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
-
-// Clean up expired entries every 5 minutes
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, value] of rateLimitStore) {
-    if (now > value.resetAt) rateLimitStore.delete(key)
-  }
-}, 5 * 60 * 1000)
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function checkRateLimit(
   key: string,
   { maxRequests = 10, windowMs = 60_000 }: { maxRequests?: number; windowMs?: number } = {}
 ): Promise<{ allowed: boolean; remaining: number }> {
-  const now = Date.now()
-  const entry = rateLimitStore.get(key)
+  try {
+    const supabase = createAdminClient()
+    const now = new Date()
+    const windowStart = new Date(now.getTime() - windowMs)
 
-  if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs })
-    return { allowed: true, remaining: maxRequests - 1 }
+    // Delete expired entries for this key
+    await supabase
+      .from('rate_limits')
+      .delete()
+      .eq('key', key)
+      .lt('expires_at', now.toISOString())
+
+    // Count requests in current window
+    const { count } = await supabase
+      .from('rate_limits')
+      .select('*', { count: 'exact', head: true })
+      .eq('key', key)
+      .gte('created_at', windowStart.toISOString())
+
+    const currentCount = count || 0
+
+    if (currentCount >= maxRequests) {
+      return { allowed: false, remaining: 0 }
+    }
+
+    // Insert new entry
+    await supabase.from('rate_limits').insert({
+      key,
+      created_at: now.toISOString(),
+      expires_at: new Date(now.getTime() + windowMs).toISOString(),
+    })
+
+    return { allowed: true, remaining: maxRequests - currentCount - 1 }
+  } catch (error) {
+    // Fail closed for authentication-critical paths
+    if (key.startsWith('login:') || key.startsWith('signup:') || key.startsWith('reset:')) {
+      console.error('Rate limiter failed on critical path — blocking request', error)
+      return { allowed: false, remaining: 0 }
+    }
+    // Fail open for less critical paths to preserve availability
+    return { allowed: true, remaining: 0 }
   }
-
-  if (entry.count >= maxRequests) {
-    return { allowed: false, remaining: 0 }
-  }
-
-  entry.count++
-  return { allowed: true, remaining: maxRequests - entry.count }
 }

@@ -186,6 +186,13 @@ export async function hasStudentPaidForCourse(studentId: string, courseId: strin
 export async function getStudentPayments(studentId: string) {
   const supabase = await createClient()
 
+  // Verify caller is the student or an admin
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || user.id !== studentId) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id || '').single()
+    if (profile?.role !== 'admin') return []
+  }
+
   const { data, error } = await supabase
     .from('payments')
     .select(`

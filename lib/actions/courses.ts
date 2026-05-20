@@ -121,8 +121,19 @@ export async function enrollInCourse(studentId: string, courseId: string) {
 
 /**
  * Internal enrollment — skips payment check. Only for use by webhook/admin flows.
+ * Rejects direct calls from non-admin authenticated users.
  */
 export async function enrollInCourseInternal(studentId: string, courseId: string) {
+  // Block direct calls from non-admin users
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') {
+      return { success: false, error: 'Unauthorized' }
+    }
+  }
+
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const adminClient = createAdminClient()
 
@@ -558,6 +569,8 @@ export async function getCourseById(courseId: string) {
   const supabase = await createClient()
 
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+
     const { data, error } = await supabase
       .from('courses')
       .select(`
@@ -578,6 +591,19 @@ export async function getCourseById(courseId: string) {
       .single()
 
     if (error) throw error
+
+    // Block access to unapproved courses unless caller is the instructor or admin
+    if (!data.is_approved) {
+      const isOwner = user && data.instructor_id === user.id
+      let isAdmin = false
+      if (user && !isOwner) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+        isAdmin = profile?.role === 'admin'
+      }
+      if (!isOwner && !isAdmin) {
+        return { success: false, error: 'Course not available' }
+      }
+    }
 
     // Sort materials and sub_materials by order_index
     if (data.materials) {
@@ -734,7 +760,7 @@ export async function updateCourse(courseId: string, courseData: Partial<{
     }
 
     // Field allowlist — prevent mass assignment of protected fields
-    const ALLOWED_FIELDS = ['title', 'description', 'thumbnail_url', 'difficulty', 'category', 'price', 'learning_objectives', 'prerequisites', 'is_published'] as const
+    const ALLOWED_FIELDS = ['title', 'description', 'thumbnail_url', 'difficulty', 'category', 'price', 'learning_objectives', 'prerequisites'] as const
     const sanitized: Record<string, any> = {}
     for (const key of ALLOWED_FIELDS) {
       if (key in courseData) {

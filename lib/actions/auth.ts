@@ -178,6 +178,13 @@ export async function requestPasswordReset(formData: FormData) {
     redirect('/forgot-password?error=' + encodeURIComponent('Email is required'))
   }
 
+  // Rate limiting: 3 reset requests per email per hour
+  const { checkRateLimit } = await import('@/lib/rate-limit')
+  const { allowed } = await checkRateLimit(`reset:${email}`, { maxRequests: 3, windowMs: 3600_000 })
+  if (!allowed) {
+    redirect('/forgot-password?error=' + encodeURIComponent('Too many reset requests. Please try again later.'))
+  }
+
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
   })

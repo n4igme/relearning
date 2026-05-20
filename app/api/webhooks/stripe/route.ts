@@ -168,18 +168,23 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     const payment = await getPaymentByIntentId(paymentIntentId)
 
     if (payment) {
-      const { createClient } = await import('@/lib/supabase/server')
-      const supabase = await createClient()
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const supabase = createAdminClient()
 
-      // Delete enrollment to revoke access
-      const { error: deleteError } = await supabase
+      // Delete enrollment to revoke access (admin client bypasses RLS)
+      const { data, error: deleteError } = await supabase
         .from('enrollments')
         .delete()
         .eq('student_id', payment.student_id)
         .eq('course_id', payment.course_id)
+        .select()
 
-      if (deleteError) {
-        console.error('Error revoking course access:', deleteError)
+      if (deleteError || !data || data.length === 0) {
+        console.error('CRITICAL: Failed to revoke course access after refund', {
+          studentId: payment.student_id,
+          courseId: payment.course_id,
+          error: deleteError,
+        })
       } else {
         console.log(`Course access revoked for student ${payment.student_id}, course ${payment.course_id}`)
       }

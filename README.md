@@ -1,4 +1,4 @@
-# CyberSec Academy
+# RE-learning Platform
 
 A modern cybersecurity e-learning platform with gamification. Master ethical hacking, penetration testing, and security operations through hands-on training.
 
@@ -41,7 +41,7 @@ psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/seed-ski
 psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/seed-badges.sql
 psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/seed-tools.sql
 
-# Create default admin (email: admin@cybersec.local / password: Admin123!)
+# Create default admin (email: admin@elearning.local / password: Admin123!)
 psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < database/create-admin.sql
 
 # Use the keys from `supabase status` in your .env.local

@@ -29,14 +29,16 @@ export async function POST(req: NextRequest) {
     const referer = req.headers.get('referer')
     const expectedOrigin = process.env.NEXT_PUBLIC_APP_URL
 
-    if (expectedOrigin) {
-      const isValidOrigin = origin === expectedOrigin || referer?.startsWith(expectedOrigin)
-      if (!isValidOrigin) {
-        return NextResponse.json(
-          { error: 'Invalid request origin' },
-          { status: 403 }
-        )
-      }
+    if (!expectedOrigin) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+    }
+
+    const isValidOrigin = origin === expectedOrigin || referer?.startsWith(expectedOrigin)
+    if (!isValidOrigin) {
+      return NextResponse.json(
+        { error: 'Invalid request origin' },
+        { status: 403 }
+      )
     }
 
     const stripe = getStripe()

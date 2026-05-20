@@ -54,6 +54,7 @@ export async function getStudentSkills(studentId: string) {
 
 /**
  * Update student's skill proficiency
+ * Only callable internally (from quiz/course completion flows) — blocks direct student calls.
  */
 export async function updateSkillProficiency(
   studentId: string,
@@ -62,6 +63,18 @@ export async function updateSkillProficiency(
   pointsToAdd: number = 0
 ) {
   const supabase = await createClient()
+
+  // Block direct calls from the student themselves
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user && user.id === studentId) {
+    // Verify caller context: only allow if called from an internal flow
+    // (internal flows don't have a matching user session for the target student)
+    // Direct calls will have user.id === studentId — block these
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') {
+      return { success: false, error: 'Cannot modify skills directly' }
+    }
+  }
 
   try {
     // Check if student already has this skill

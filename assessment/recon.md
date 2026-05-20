@@ -1,219 +1,271 @@
-# Reconnaissance Report
+# Security Reconnaissance Report — RE-learning Platform
 
-**Target**: /Users/nb-dk-0552/Project/relearning
-**Date**: 2026-05-20
+**Date:** 2026-05-20  
+**Target:** /Users/nb-dk-0552/Project/relearning  
+**Cycle:** 5 (fully patched)
 
-## Technology Stack
+---
 
-| Category | Details |
-|----------|---------|
-| Languages | TypeScript 5.7, SQL |
-| Frameworks | Next.js 15 (App Router), React 19 |
-| UI | shadcn/ui (Radix UI), Tailwind CSS 3.4 |
-| Database | Supabase (PostgreSQL) with Row Level Security |
-| Auth | Supabase Auth (@supabase/ssr ^0.5.2, @supabase/supabase-js ^2.47.10) |
-| Payments | Stripe ^17.5.0 |
-| Media | Cloudinary ^2.8.0 |
-| Validation | Zod ^3.24.1 |
-| Testing | Vitest ^4.0.18, Playwright ^1.58.0, fast-check ^4.5.3 |
-| Deploy | Netlify, Docker (standalone output) |
-| Package Manager | npm (package-lock.json) |
+## 1. Technology Stack
 
-## Entry Points
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Framework | Next.js (App Router) | ^16.2.6 |
+| Language | TypeScript | ^5.7.2 |
+| Runtime | React | ^19.0.0 |
+| Database | Supabase (PostgreSQL) | @supabase/supabase-js ^2.47.10 |
+| Auth | Supabase Auth + @supabase/ssr ^0.5.2 | — |
+| Payments | Stripe | ^17.5.0 |
+| Media | Cloudinary | ^2.8.0 |
+| Validation | Zod | ^3.24.1 |
+| UI | Radix UI + Tailwind CSS ^3.4.17 | — |
+| Testing | Vitest ^4.0.18, Playwright ^1.58.0 | — |
+| Deploy | Standalone (Docker) / Netlify | — |
 
-### API Routes
+**Build:** `next build` with `output: 'standalone'`  
+**Dev:** Turbopack (`next dev --turbopack`)
 
-| Method | Path | Handler | Auth Required |
-|--------|------|---------|---------------|
-| GET | /api/check-user | app/api/check-user/route.ts:4 | Yes (admin only) |
-| POST | /api/checkout | app/api/checkout/route.ts:18 | Yes (authenticated user) |
-| POST | /api/webhooks/stripe | app/api/webhooks/stripe/route.ts:18 | No (Stripe signature verification) |
-| GET | /auth/callback | app/auth/callback/route.ts:7 | No (OAuth/email callback) |
+---
 
-### Server Actions (lib/actions/)
+## 2. Entry Points
 
-| File | Key Functions | Auth Required |
-|------|---------------|---------------|
-| auth.ts | signUp, signIn, signOut, signInWithGoogle, requestPasswordReset, updatePassword, getUser, getUserProfile | Varies (signUp/signIn: No; others: Yes) |
-| courses.ts | enrollInCourse, enrollInCourseInternal, markSubMaterialCompleted, createCourse, updateCourse, deleteCourse, createMaterial, updateMaterial, deleteMaterial, createSubMaterial, updateSubMaterial, deleteSubMaterial, approveCourse, getAllCoursesAdmin | Yes (role-dependent) |
-| payments.ts | createPayment, updatePaymentStatus, getPaymentBySessionId, getPaymentByIntentId, hasStudentPaidForCourse, getStudentPayments, getCoursePayments | Yes |
-| gamification.ts | awardPoints, checkAndAwardBadges, updateStreak, getLeaderboard, getStudentRank, getStudentBadges | Yes |
-| quests.ts | submitQuestAttempt, getStudentQuestAttempts, getQuestWithQuestions, getCourseQuests, canAttemptQuest, createQuest, updateQuest, deleteQuest, createQuestion, updateQuestion, deleteQuestion, createOption, updateOption, deleteOption, getAllCourseQuests | Yes (role-dependent) |
-| skills.ts | getAllSkills, getStudentSkills, updateSkillProficiency, getSkillStatistics, getSkillsByCategory | Yes |
-| tools.ts | getAllTools, getToolsByCategory, getToolStatistics | Yes |
-| enrollment-requests.ts | createEnrollmentRequest, getAllEnrollmentRequests, getMyEnrollmentRequests, approveEnrollmentRequest, rejectEnrollmentRequest, getEnrollmentRequestById | Yes (role-dependent) |
+### API Routes (app/api/)
 
-### Pages (App Router)
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/checkout` | POST | Create Stripe checkout session |
+| `/api/check-user` | GET | Admin-only: lookup user by email |
+| `/api/webhooks/stripe` | POST | Stripe webhook handler (checkout.session.completed, payment_intent.succeeded, payment_intent.payment_failed, charge.refunded) |
+| `/auth/callback` | GET | OAuth/email-confirmation callback, session exchange |
 
-| Path | Auth | Role |
-|------|------|------|
-| / | No | Public |
-| /login | No | Public |
-| /register | No | Public |
-| /forgot-password | No | Public |
-| /reset-password | No | Public |
-| /resend-verification | No | Public |
-| /dashboard | Yes | Any |
-| /courses | Yes | Any |
-| /courses/[slug] | Yes | Any |
-| /skills | Yes | Any |
-| /gamification | Yes | Any |
-| /leaderboard | Yes | Any |
-| /certificates | Yes | Any |
-| /quests/[questId] | Yes | Any |
-| /tools | Yes | Any |
-| /payment/success | Yes | Any |
-| /admin/users | Yes | Admin |
-| /admin/courses | Yes | Admin |
-| /admin/enrollment-requests | Yes | Admin |
-| /mentor/courses | Yes | Mentor/Admin |
+### Middleware
 
-## Authentication & Authorization
+- **File:** `middleware.ts`
+- **Matcher:** All routes except static assets
+- **Functions:**
+  - Session refresh via `supabase.auth.getUser()`
+  - Protected route enforcement (redirect to `/login`)
+  - Role-based access: `/admin` → admin only, `/mentor` → mentor or admin
+  - Deactivated/unapproved user blocking
+  - Redirect authenticated users away from `/login`, `/register`
 
-### Mechanism
-- **Supabase Auth** with email/password and Google OAuth
-- Session managed via HTTP-only cookies (`@supabase/ssr`)
-- Token validated server-side via `supabase.auth.getUser()` (not `getSession()`)
+---
 
-### Middleware (middleware.ts)
-- Runs on all routes except static assets
-- **Protected paths**: /dashboard, /courses, /admin, /mentor, /student, /skills, /gamification, /leaderboard, /certificates, /quests, /payment
-- **Role enforcement**: /admin → admin only; /mentor → mentor or admin
-- **Account status checks**: blocks deactivated users (`is_active=false`), blocks unapproved users from protected content
-- Redirects authenticated users away from /login, /register
+## 3. Server Actions (lib/actions/)
+
+### auth.ts
+- `signUp(formData)` — rate-limited (3/hr per email), validates email/password/role, role restricted to student|mentor
+- `signIn(formData)` — rate-limited (5/min per email), generic error messages
+- `signOut()` — clears session
+- `getUser()` / `getUserProfile()` — session introspection
+- `signInWithGoogle()` — OAuth redirect to `/auth/callback`
+- `requestPasswordReset(formData)` — rate-limited (3/hr per email)
+- `updatePassword(formData)` — requires active session (from reset link)
+
+### courses.ts
+- `enrollInCourse(studentId, courseId)` — verifies caller === studentId, checks payment for paid courses
+- `enrollInCourseInternal(studentId, courseId)` — admin-only gate, uses admin client, skips payment check
+- `markSubMaterialCompleted(enrollmentId, subMaterialId, timeSpent)` — ownership check, min 30s time
+- `createCourse / updateCourse / deleteCourse` — instructor ownership checks, Zod validation, field allowlist on update
+- `createMaterial / updateMaterial / deleteMaterial` — instructor ownership
+- `createSubMaterial / updateSubMaterial / deleteSubMaterial` — instructor context
+- `approveCourse(courseId, approved)` — admin-only
+- `getCourseById(courseId)` — blocks unapproved courses unless instructor/admin
+- `getPublishedCourses()` — only published + approved
+
+### payments.ts
+- `createPayment(...)` — inserts pending payment record
+- `updatePaymentStatus(...)` — uses admin client (webhook context)
+- `getStudentPayments(studentId)` — caller must be student or admin
+- `hasStudentPaidForCourse(studentId, courseId)` — boolean check
+
+### gamification.ts
+- `awardPoints(studentId, points, source, sourceId)` — upserts leaderboard_stats
+- `checkAndAwardBadges(studentId)` — evaluates all badge criteria
+- `updateStreak(studentId)` — consecutive-day tracking
+- `getLeaderboard(limit, timeframe)` — public read
+- `getStudentRank(studentId)` / `getStudentBadges(studentId)` — read-only
+
+### quests.ts
+- `submitQuestAttempt(questId, studentId, answers)` — caller verification, UUID+answers validation, admin client for correct answers, max_attempts check (app + DB trigger), scoring scoped to current quest options only
+- `getQuestWithQuestions(questId)` — returns options without is_correct
+- `createQuest / updateQuest / deleteQuest` — instructor ownership
+- `createQuestion / updateQuestion / deleteQuestion` — instructor context
+- `createOption(questionId, optionData)` — stores is_correct in quest_correct_options via admin client
+- `updateOption / deleteOption` — instructor context
+- `getAllCourseQuests(courseId)` — instructor-only (includes correct answers via RLS join)
+- `canAttemptQuest(questId, studentId)` — enrollment + max_attempts check
+
+### skills.ts
+- `getAllSkills()` / `getStudentSkills(studentId)` / `getSkillsByCategory()` — read-only
+- `updateSkillProficiency(studentId, skillId, newLevel, pointsToAdd)` — blocks direct student calls (user.id === studentId rejected unless admin)
+
+### tools.ts
+- `getAllTools(filters)` — LIKE wildcards escaped, public read
+- `getToolsByCategory()` / `getToolStatistics()` — read-only
+
+### enrollment-requests.ts
+- `createEnrollmentRequest(data)` — authenticated student, checks existing enrollment/pending request
+- `getAllEnrollmentRequests(status)` — admin-only
+- `getMyEnrollmentRequests()` — own requests
+- `approveEnrollmentRequest(requestId, adminNotes)` — admin-only, calls enrollInCourseInternal
+- `rejectEnrollmentRequest(requestId, adminNotes)` — admin-only
+
+---
+
+## 4. Pages
+
+| Route | Access | Purpose |
+|-------|--------|---------|
+| `/` | Public | Landing page |
+| `/login` | Public | Login form |
+| `/register` | Public | Registration form |
+| `/forgot-password` | Public | Password reset request |
+| `/reset-password` | Public (with token) | Set new password |
+| `/resend-verification` | Public | Resend email verification |
+| `/dashboard` | Authenticated | Student dashboard |
+| `/courses` | Authenticated | Browse courses |
+| `/courses/[courseId]` | Authenticated | Course detail |
+| `/courses/[courseId]/learn` | Authenticated (enrolled) | Learning interface |
+| `/courses/[courseId]/enroll` | Authenticated | Enrollment/payment page |
+| `/quests/[questId]` | Authenticated (enrolled) | Take quiz |
+| `/skills` | Authenticated | Skill tracking |
+| `/gamification` | Authenticated | Points & badges overview |
+| `/leaderboard` | Authenticated | Rankings |
+| `/certificates` | Authenticated | Student certificates |
+| `/tools` | Authenticated | Security tools catalog |
+| `/payment/success` | Authenticated | Post-payment confirmation |
+| `/admin/users` | Admin | User management |
+| `/admin/courses` | Admin | Course approval |
+| `/admin/enrollment-requests` | Admin | Manual payment approval |
+| `/mentor/courses/new` | Mentor/Admin | Create course |
+| `/mentor/courses/[courseId]` | Mentor/Admin | Edit course |
+
+---
+
+## 5. Authentication & Authorization
+
+### Authentication
+- **Providers:** Email/password, Google OAuth
+- **Session:** Supabase Auth cookies, validated via `getUser()` (not `getSession()`)
+- **Token refresh:** Middleware refreshes on every request
+- **Password reset:** Email-based with redirect to `/auth/callback?next=/reset-password`
+
+### Authorization Layers
+1. **Middleware:** Route-level protection (unauthenticated → login, role checks for /admin, /mentor)
+2. **Server Actions:** Per-action ownership/role verification via `supabase.auth.getUser()`
+3. **Database RLS:** Row-level policies on all 20+ tables
+4. **DB Triggers:**
+   - `prevent_self_privilege_escalation` — blocks role/is_approved/is_active self-modification
+   - `enforce_quest_max_attempts` — atomic max attempts enforcement
 
 ### Role Model
-- **admin**: Full access, user management, course approval, enrollment request approval
-- **mentor**: Course creation/editing, quiz management (own courses only)
-- **student**: Enrollment, learning, quiz attempts, gamification
+| Role | Capabilities |
+|------|-------------|
+| student | Enroll, learn, take quizzes, view own data |
+| mentor | Create/manage own courses and quizzes |
+| admin | Full access: approve courses/users, manage enrollments, view all data |
 
-### Auth Gaps Observed
-- `updateMaterial`, `deleteMaterial`, `createSubMaterial`, `updateSubMaterial`, `deleteSubMaterial` — no ownership verification (only `createMaterial` checks course ownership)
-- `createQuestion`, `updateQuestion`, `deleteQuestion`, `createOption`, `updateOption`, `deleteOption` — no ownership verification
-- `getStudentSkills`, `getStudentQuestAttempts` — no verification that caller is the student or admin
-- `getStudentPayments`, `getCoursePayments` — no authorization check on who can view payments
-- `getAllCoursesAdmin` — no admin role check in the function itself (relies on page-level middleware)
+### Key Security Controls
+- Rate limiting: persistent (Supabase table), fails closed for login/signup/reset
+- CSRF: Origin/Referer check on `/api/checkout`, fails closed if APP_URL unset
+- Field allowlist on course updates (prevents mass assignment)
+- Google OAuth restricted to student role only
+- Deactivated/unapproved users blocked at middleware level
 
-## Data Flow Summary
+---
 
-### Registration Flow
-1. User submits form → `signUp()` server action
-2. Rate limit check (3/hour per email)
-3. Email/password validation
-4. Role validation (student/mentor only)
-5. `supabase.auth.signUp()` → email confirmation sent
-6. On email confirm → `/auth/callback` → auto-approves students, mentors need admin approval
+## 6. Data Flow Summary
 
-### Payment Flow
-1. Student clicks checkout → POST `/api/checkout`
-2. Rate limit (5/min per IP), CSRF origin check
-3. UUID validation on courseId
-4. Auth check, enrollment/payment duplicate check
-5. Stripe checkout session created with metadata (userId, courseId)
-6. Payment record created in DB (status: pending)
-7. Stripe webhook → POST `/api/webhooks/stripe`
-8. Signature verification → `updatePaymentStatus` + `enrollInCourseInternal`
+### Enrollment (Paid Course)
+```
+Student → /api/checkout (CSRF check, rate limit) → Stripe session created → payment record (pending)
+Stripe webhook → /api/webhooks/stripe → updatePaymentStatus (admin client) → enrollInCourseInternal (admin gate) → enrollment created
+```
 
-### Quiz Submission Flow
-1. Student submits answers → `submitQuestAttempt()`
-2. Auth verification (caller = studentId)
-3. UUID + answers format validation (Zod)
-4. Max attempts check (pre-insert)
-5. Score calculation against correct options
-6. Attempt saved to DB
-7. Race condition guard (post-insert max attempts check)
-8. If passed: award points, update streak, update skills, check badges
+### Enrollment (Manual Payment)
+```
+Student → createEnrollmentRequest → pending record
+Admin → approveEnrollmentRequest → enrollInCourseInternal → enrollment created
+```
 
-### Course Update Flow
-1. Mentor submits update → `updateCourse()`
-2. Auth check (caller = course instructor)
-3. Zod schema validation
-4. **Field allowlist** applied: only title, description, thumbnail_url, difficulty, category, price, learning_objectives, prerequisites, is_published
-5. Update executed with sanitized data
+### Quiz Submission
+```
+Student → submitQuestAttempt → verify caller, validate inputs → fetch correct answers (admin client, scoped to quest options) → calculate score → insert attempt (DB trigger enforces max_attempts) → award points/badges/skills if passed
+```
 
-## Business Features
+### Refund
+```
+Stripe charge.refunded webhook → updatePaymentStatus(refunded) → delete enrollment (admin client) → access revoked
+```
 
-| Feature | Endpoints | Data Lifecycle | Dependencies | Sensitivity |
-|---------|-----------|---------------|--------------|-------------|
-| User Registration | signUp, signIn, signInWithGoogle, /auth/callback | Create → Verify → Approve → Active | Supabase Auth, Email | PII (email, name) |
-| Password Reset | requestPasswordReset, updatePassword, /auth/callback | Request → Email → Reset | Supabase Auth, Email | Auth credential |
-| Course Management | createCourse, updateCourse, deleteCourse, approveCourse | Create → Edit → Publish → Approve | Cloudinary (media) | Business content |
-| Course Enrollment | enrollInCourse, enrollInCourseInternal | Payment → Enroll → Progress → Complete | Payments, Gamification | Financial |
-| Stripe Payments | POST /api/checkout, POST /api/webhooks/stripe | Create → Pending → Completed/Failed/Refunded | Stripe, Enrollment | Financial |
-| Manual Payments | createEnrollmentRequest, approveEnrollmentRequest, rejectEnrollmentRequest | Submit → Review → Approve/Reject → Enroll | Admin approval | Financial, PII |
-| Learning Progress | markSubMaterialCompleted, updateCourseProgress | Start → Progress → Complete → Certificate | Gamification, Skills | Academic |
-| Quiz System | submitQuestAttempt, createQuest, createQuestion, createOption | Create → Publish → Attempt → Score | Gamification, Skills | Academic integrity |
-| Gamification | awardPoints, checkAndAwardBadges, updateStreak | Activity → Points → Badges → Leaderboard | Courses, Quests | Competitive |
-| Skills Tracking | updateSkillProficiency, getStudentSkills | Quiz/Course → Assess → Level Up | Quests, Courses | Academic |
-| Admin User Mgmt | approveUser, rejectUser (inline actions in admin/users/page.tsx) | Register → Pending → Approve/Reject | Admin client (service role) | Access control |
-| Certificate Gen | generateCertificate (internal) | Course complete + quiz pass → Issue | Courses, Quests | Academic credential |
+### Course Completion
+```
+markSubMaterialCompleted → updateCourseProgress → if 100%: completeCourse → verify quiz passed → award points → update skills → generate certificate
+```
 
-## Sensitive Assets
+---
 
-### Database Schema (20+ tables with RLS)
-- **profiles**: id, email, full_name, role, avatar_url, bio, is_approved, is_active
-- **courses**: instructor_id, title, price, is_published, is_approved
-- **enrollments**: student_id, course_id, progress_percentage, completed_at
-- **payments**: student_id, course_id, amount, status, stripe_payment_intent_id, stripe_session_id
-- **enrollment_requests**: student_id, full_name, email, phone_number, amount_paid, bank_account_used, payment_proof_url, payment_reference
-- **quest_attempts**: student_id, quest_id, score, passed, answers
-- **quest_options**: is_correct (answer key)
-- **certificates**: student_id, certificate_number, verification_url
-- **leaderboard_stats**: total_points, badges_earned, current_streak_days
-- **student_skills**: proficiency_level, points_earned
-- **student_badges**: badge_id, evidence
-- **audit_log**: actor_id, action, target_type, target_id, details
+## 7. Business Features
 
-### Privileged Operations
-- **Admin client** (`lib/supabase/admin.ts`): Uses `SUPABASE_SERVICE_ROLE_KEY`, bypasses RLS
-- **User approval/rejection**: Admin can approve/reject users, confirm emails
-- **Course approval**: Admin can approve/reject courses for publication
-- **Enrollment approval**: Admin can approve manual payment enrollment requests
-- **Internal enrollment**: `enrollInCourseInternal()` skips payment verification (used by webhooks/admin)
+- **Multi-role LMS:** Admin, Mentor, Student with approval workflows
+- **Course Builder:** Chapters → Lessons (video/text), instructor-owned
+- **Assessments:** Single/multiple choice quizzes, configurable passing score and max attempts
+- **Gamification:** Points (100-800), 25 skills, 15 badges (bronze-platinum), streaks, leaderboard
+- **Payments:** Stripe (automated) + manual bank transfer (admin approval)
+- **Certificates:** Auto-generated on course completion with verification URL
+- **Security Tools Catalog:** Reference database of cybersecurity tools
 
-### Secrets Management
-- Environment variables in `.env.local` (gitignored)
-- Keys: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CLOUDINARY_CLOUD_NAME`
-- Service role key used server-side only in `lib/supabase/admin.ts`
+---
+
+## 8. Sensitive Assets
+
+| Asset | Location | Protection |
+|-------|----------|-----------|
+| Quiz correct answers | `quest_correct_options` table | Instructor-only RLS, admin client for scoring |
+| Payment records | `payments` table | RLS: student own + admin + instructor (own courses) |
+| Service role key | `SUPABASE_SERVICE_ROLE_KEY` env var | Server-only (admin.ts) |
+| Stripe secret key | `STRIPE_SECRET_KEY` env var | Server-only |
+| Stripe webhook secret | `STRIPE_WEBHOOK_SECRET` env var | Signature verification |
+| User passwords | Supabase Auth (bcrypt) | Never exposed |
+| Student PII | `profiles` table | Public SELECT (full_name, email visible) |
+| Payment proof URLs | `enrollment_requests.payment_proof_url` | Stored as URL (Cloudinary) |
+| Certificate numbers | `certificates.certificate_number` | Public verification by design |
+
+---
+
+## 9. Attack Surface Notes
 
 ### Security Headers (next.config.js)
 - X-Frame-Options: DENY
 - X-Content-Type-Options: nosniff
 - Referrer-Policy: strict-origin-when-cross-origin
-- Permissions-Policy: camera=(), microphone=(), geolocation=()
 - HSTS: max-age=31536000; includeSubDomains
-- CSP: default-src 'self'; script-src includes 'unsafe-inline' 'unsafe-eval'; connect-src allows *.supabase.co
+- CSP: Restrictive (self + stripe + supabase)
+- Permissions-Policy: camera=(), microphone=(), geolocation=()
 
-### Rate Limiting
-- In-memory store (`Map`) — not distributed (resets on restart, per-instance only)
-- Login: 5 attempts/min per email
-- Signup: 3 attempts/hour per email
-- Checkout: 5 attempts/min per IP
+### Potential Areas of Interest
+1. **Profile visibility:** `profiles` table has `SELECT USING(true)` — all user emails/names publicly readable by any authenticated user
+2. **Leaderboard stats:** Readable by all authenticated users (by design for rankings)
+3. **updateMaterial / updateSubMaterial:** No explicit ownership verification in the action code (relies on RLS)
+4. **createSubMaterial:** No explicit course ownership check in action (relies on RLS for material_id)
+5. **Checkout route:** Uses `createClient(cookieStore)` with direct cookies import — different pattern from other server actions
+6. **handle_new_user trigger:** Trusts `raw_user_meta_data->>'role'` from signup — but signUp action validates role to student|mentor only
+7. **Student badges INSERT policy:** Requires admin role — but `checkAndAwardBadges` runs in user context (may fail silently or rely on leaderboard_stats INSERT policy)
+8. **leaderboard_stats / student_skills:** INSERT/UPDATE policies require admin role, but gamification.ts and skills.ts call these in user session context — potential RLS conflicts (may rely on the user being the student_id owner via other policies)
+9. **quest_attempts DELETE:** Used in race-condition rollback — no explicit DELETE policy visible (may fail silently)
+10. **Image domains:** Allows multiple external domains (googleusercontent, cloudinary, ui-avatars, placehold.co)
+11. **TypeScript build errors ignored:** `ignoreBuildErrors: true` in next.config.js — type safety gaps possible
+12. **Enrollment uniqueness:** Enforced at DB level (UNIQUE constraint) — safe against double-enrollment
 
-## Attack Surface Notes
-
-1. **Missing authorization on sub-resource mutations**: `updateMaterial`, `deleteMaterial`, `createSubMaterial`, `updateSubMaterial`, `deleteSubMaterial`, `createQuestion`, `updateQuestion`, `deleteQuestion`, `createOption`, `updateOption`, `deleteOption` — any authenticated user could potentially modify any course's content if they know the IDs (relies on RLS only)
-
-2. **IDOR potential on read operations**: `getStudentSkills(studentId)`, `getStudentQuestAttempts(studentId)`, `getStudentPayments(studentId)`, `getCoursePayments(courseId)` — accept arbitrary IDs without verifying caller authorization at the application layer
-
-3. **Race condition in quiz attempts**: Post-insert check for max_attempts has a TOCTOU window; concurrent requests could exceed the limit before the guard triggers
-
-4. **In-memory rate limiting**: Not effective in multi-instance deployments; resets on server restart; trivially bypassed with distributed requests
-
-5. **CSP allows unsafe-inline and unsafe-eval**: Weakens XSS protection significantly
-
-6. **Checkout CSRF protection**: Only checks `origin`/`referer` headers against `NEXT_PUBLIC_APP_URL`; if env var is unset, the check is skipped entirely
-
-7. **Admin client exposure risk**: `createAdminClient()` is importable from any server-side code; no additional guardrails beyond developer discipline
-
-8. **Quiz answer exposure**: `getQuestWithQuestions()` returns questions without `is_correct` field (good), but `getAllCourseQuests()` returns full answers — authorization check exists but worth verifying
-
-9. **Enrollment request PII**: Contains phone_number, bank_account_used, payment_proof_url — sensitive financial/personal data in a single table
-
-10. **No input sanitization on search**: `getAllTools()` escapes SQL LIKE wildcards (good), but other text inputs (course descriptions, student notes) flow directly to Supabase without HTML sanitization — potential stored XSS if rendered unsafely
-
-11. **Password reset flow**: No rate limiting on `requestPasswordReset` — potential for email flooding
-
-12. **Webhook endpoint**: Properly validates Stripe signature, but error responses leak internal state via `console.error` (not exposed to client, but logged)
-
-13. **TypeScript build errors ignored**: `ignoreBuildErrors: true` in next.config.js — type safety gaps may hide runtime issues
+### Patched Vulnerabilities (Cycle 5)
+- ✅ Quiz answer exposure → moved to `quest_correct_options` with instructor-only RLS
+- ✅ Role self-escalation → DB trigger `prevent_self_privilege_escalation`
+- ✅ Rate limiter bypass (serverless) → persistent Supabase table, fails closed
+- ✅ enrollInCourseInternal abuse → admin role gate
+- ✅ updateSkillProficiency abuse → blocks direct student calls
+- ✅ CSRF on checkout → origin check, fails closed if APP_URL unset
+- ✅ Refund access revocation → admin client deletes enrollment
+- ✅ Max attempts race condition → DB trigger `enforce_quest_max_attempts`
+- ✅ Content access without enrollment → RLS restricts materials/sub_materials to enrolled students
+- ✅ Quiz scoring manipulation → scoped to current quest's option IDs only

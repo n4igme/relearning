@@ -1,311 +1,217 @@
 # Bug Bounty Report
 
-**Target**: CyberSec Academy (cybersec-academy)
+**Target**: RE-learning Platform
 **Repository**: /Users/nb-dk-0552/Project/relearning
-**Assessment Date**: 2026-05-20
+**Assessment Date**: 2026-05-21
+**Assessment Cycle**: 5 (post-remediation verification)
 **Methodology**: Static source code analysis with data flow tracing
-**Scope**: Next.js 15 (TypeScript), Supabase (PostgreSQL + RLS), Stripe integration, server actions, API routes
+**Scope**: Next.js 16 (TypeScript), Supabase (PostgreSQL + RLS), Stripe, server actions, API routes, database schemas
 
 ---
 
 ## Executive Summary
 
-A security assessment of the CyberSec Academy e-learning platform identified **7 confirmed vulnerabilities** (1 High, 4 Medium, 2 Low). The most critical finding is an information disclosure vulnerability that exposes quiz answer keys to all authenticated users, completely undermining the platform's academic integrity, certification system, and gamification leaderboard.
+After five iterative assessment and remediation cycles, the RE-learning Platform has achieved a strong security posture with **zero Critical or High severity vulnerabilities**. The remaining **6 confirmed findings** (4 Medium, 2 Low) represent hardening opportunities rather than immediately exploitable attack paths.
 
-The application demonstrates generally sound security practices — Supabase Row Level Security (RLS) effectively prevents most access control attacks, authentication uses server-side token validation, and input handling leverages React's auto-escaping and Zod validation. However, a permissive RLS policy on the `quest_options` table, combined with business logic gaps in the course publishing workflow and rate limiting infrastructure, create exploitable weaknesses.
+The most significant remaining risk is an overly permissive database policy that exposes all user email addresses and roles to any authenticated user. Combined with the absence of multi-factor authentication on admin accounts, this creates a theoretical attack chain: enumerate admin emails → phish/credential-stuff → gain admin access. While this requires social engineering and is not a direct technical exploit, it represents the platform's highest residual risk.
 
-**Overall Security Posture**: Moderate. The platform's reliance on RLS as the primary access control layer is largely effective, but the quiz answer exposure represents a fundamental design flaw that invalidates the platform's core value proposition (verified learning outcomes). The rate limiting infrastructure is unsuitable for the stated deployment target (Netlify serverless).
+The platform's layered security architecture — Supabase RLS, database triggers, application-level checks, middleware, and rate limiting — provides effective defense-in-depth. All previously identified Critical and High vulnerabilities (role self-escalation, payment bypass, quiz answer exposure, content access bypass, middleware bypass CVE) have been successfully remediated.
 
 ### Risk Overview
 
-| Severity | Count | Key Findings |
-|----------|-------|--------------|
+| Severity | Count | Findings |
+|----------|-------|----------|
 | Critical | 0 | — |
-| High | 1 | Quiz answer key exposure to all users |
-| Medium | 4 | Admin approval bypass, ineffective rate limiting, password reset flooding, weak CSP |
-| Low | 2 | Quiz race condition (self-DoS), IDOR pattern (RLS-mitigated) |
+| High | 0 | — |
+| Medium | 4 | Profile data exposure, raw error objects, rate limit IP spoofing, no MFA |
+| Low | 2 | CSP unsafe-inline, certificates persist after refund |
 
 ### Top Recommendations
 
-1. **Restrict `quest_options` RLS policy** — Remove the `is_correct` column from student-accessible queries. This is the highest-impact fix and protects academic integrity, certificates, and leaderboard fairness.
-2. **Remove `is_published` from the course update allowlist** — Prevent mentors from bypassing admin approval. Add `is_approved` check to `getCourseById()`.
-3. **Replace in-memory rate limiting with a persistent store** — Use Redis, Supabase table, or Netlify Edge rate limiting to ensure anti-automation controls work in serverless deployments.
+1. **Restrict profile visibility** — Remove email from public SELECT policy and leaderboard query. Prevents admin enumeration and user privacy violation. (Low effort)
+2. **Sanitize error returns** — Replace 118 raw error returns with generic messages. Prevents schema disclosure. (Medium effort)
+3. **Enable MFA for admin accounts** — Add TOTP requirement for admin role. Blocks the most dangerous attack chain. (Medium effort)
 
 ---
 
 ## Detailed Findings
 
-### [HIGH-001] Quiz Answer Key Exposed to All Authenticated Users
+### [MEDIUM-001] User Profile Data Exposed to All Authenticated Users
 
-**Severity**: High | **CVSS**: 7.5 (AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N) | **CWE**: CWE-200
-**Location**: `database/add-missing-rls-policies.sql:210-212`
+**Severity**: Medium | **CVSS**: 5.3 (AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N) | **CWE**: CWE-200
+**Location**: `database/supabase-schema.sql:354-355`, `lib/actions/gamification.ts:265`
 
 **Description**:
-The `quest_options` table contains a boolean `is_correct` column that identifies correct answers for all quiz questions. The RLS policy grants unrestricted SELECT access to all authenticated users:
-
-```sql
-CREATE POLICY "Quest options are viewable by everyone"
-  ON public.quest_options FOR SELECT
-  USING (true);
-```
-
-While the application's `getQuestWithQuestions()` function only selects `id, option_text, order_index` (excluding `is_correct`), students have direct access to the Supabase client via the publicly-exposed anon key (`NEXT_PUBLIC_SUPABASE_ANON_KEY`). They can bypass the application layer entirely and query the table directly.
+The `profiles` table RLS policy allows any authenticated user to SELECT all rows with all columns. The leaderboard function explicitly returns user emails. Any student can enumerate all platform users, their email addresses, and their roles (admin/mentor/student).
 
 **Vulnerable Code**:
 ```sql
--- database/add-missing-rls-policies.sql:210
-CREATE POLICY "Quest options are viewable by everyone"
-  ON public.quest_options FOR SELECT
-  USING (true);  -- No restriction on columns or rows
+-- database/supabase-schema.sql:354
+CREATE POLICY "Public profiles are viewable by everyone"
+    ON public.profiles FOR SELECT
+    USING (true);
+```
+```typescript
+// lib/actions/gamification.ts:265
+profiles:student_id (
+  full_name,
+  email  // Exposed to all leaderboard viewers
+)
 ```
 
 **Attack Scenario**:
-1. Student authenticates normally (email/password or Google OAuth)
-2. Opens browser developer console on any authenticated page
-3. Executes: `const { data } = await supabase.from('quest_options').select('id, question_id, is_correct').eq('is_correct', true)`
-4. Receives all correct answer IDs for every quiz on the platform
-5. Submits quiz with known correct answers → 100% score → points → badges → certificate
+1. Authenticate as any student
+2. Query: `supabase.from('profiles').select('email, role').eq('role', 'admin')`
+3. Receive all admin email addresses
+4. Use for targeted phishing or credential stuffing
 
-**Impact**:
-- **Academic integrity**: All quiz scores and certificates become meaningless
-- **Gamification fairness**: Leaderboard rankings are trivially manipulable
-- **Business value**: Certificates issued by the platform lose credibility
-- **Scope**: Affects ALL students, ALL quizzes, automatable with a single query
+**Impact**: User privacy violation. Admin account identification enables targeted attacks. All user emails harvestable for spam/phishing.
 
 **Remediation**:
+```typescript
+// Fix leaderboard — remove email
+profiles:student_id (
+  full_name
+)
+```
 ```sql
--- Drop the permissive policy
-DROP POLICY "Quest options are viewable by everyone" ON public.quest_options;
-
--- Option A: Create a view that excludes is_correct for non-instructors
-CREATE OR REPLACE VIEW public.quest_options_public AS
-  SELECT id, question_id, option_text, order_index
-  FROM public.quest_options;
-
--- Grant students access to the view only
-CREATE POLICY "Students can view options via view"
-  ON public.quest_options FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.quest_questions qq
-      JOIN public.quests q ON q.id = qq.quest_id
-      JOIN public.courses c ON c.id = q.course_id
-      WHERE qq.id = question_id AND c.instructor_id = auth.uid()
-    )
-  );
-
--- Option B: Move is_correct to a separate instructor-only table
+-- Restrict profiles to own row for full data; public name only for others
+DROP POLICY "Public profiles are viewable by everyone" ON public.profiles;
+CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT
+  USING (id = auth.uid());
+CREATE POLICY "Authenticated can view public fields" ON public.profiles FOR SELECT
+  USING (auth.uid() IS NOT NULL);
+-- Then use a view or column-level security for public fields
 ```
 
-**Effort**: Low (SQL migration only, no application code changes needed)
+**Effort**: Low (leaderboard fix: 1 line; RLS: requires view-based approach for column restriction)
 
 ---
 
-### [MEDIUM-001] Mentor Can Bypass Admin Course Approval
+### [MEDIUM-002] Server Actions Return Raw Error Objects (118 Locations)
 
-**Severity**: Medium | **CVSS**: 5.4 (AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N) | **CWE**: CWE-862
-**Location**: `lib/actions/courses.ts:738` (allowlist), `database/supabase-schema.sql:368` (RLS)
+**Severity**: Medium | **CVSS**: 4.3 (AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N) | **CWE**: CWE-209
+**Location**: `lib/actions/courses.ts` (42), `lib/actions/enrollment-requests.ts` (29), `lib/actions/quests.ts` (29), `lib/actions/gamification.ts` (9), `lib/actions/skills.ts` (6), `lib/actions/tools.ts` (3)
 
 **Description**:
-The `updateCourse()` function's field allowlist includes `is_published`. A mentor can set their course to published without admin approval. The RLS policy makes any course with `is_published = true` visible to all users. The course detail page (`getCourseById`) does not check `is_approved`, allowing direct URL access to unapproved content.
+118 catch blocks across 6 server action files return the raw exception object to the client via `{ success: false, error }`. Supabase errors contain table names, column names, constraint names, and RLS policy violation messages.
+
+**Attack Scenario**:
+1. Trigger an error condition (e.g., violate a constraint, hit RLS)
+2. Receive error like: `"new row violates row-level security policy for table \"enrollments\""`
+3. Learn internal schema details to craft more targeted attacks
+
+**Impact**: Database schema disclosure. Aids reconnaissance for more sophisticated attacks.
+
+**Remediation**:
+```typescript
+} catch (error) {
+  console.error('Operation failed:', error)
+  return { success: false, error: 'Operation failed. Please try again.' }
+}
+```
+
+**Effort**: Medium (118 locations across 6 files — systematic find-and-replace)
+
+---
+
+### [MEDIUM-003] Checkout Rate Limit Bypassable via Header Spoofing
+
+**Severity**: Medium | **CVSS**: 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N) | **CWE**: CWE-348
+**Location**: `app/api/checkout/route.ts:21`
+
+**Description**:
+The checkout rate limit uses `x-forwarded-for` header as the rate limit key. This header is client-controlled in deployments without a trusted reverse proxy that overwrites it.
 
 **Vulnerable Code**:
 ```typescript
-// lib/actions/courses.ts:738
-const ALLOWED_FIELDS = ['title', 'description', 'thumbnail_url', 'difficulty',
-  'category', 'price', 'learning_objectives', 'prerequisites',
-  'is_published'  // ← Allows self-publishing
-] as const
+const ip = req.headers.get('x-forwarded-for') || 'unknown'
+const { allowed } = await checkRateLimit(`checkout:${ip}`, { maxRequests: 5, windowMs: 60_000 })
 ```
 
 **Attack Scenario**:
-1. Mentor creates a course (starts as `is_published: false, is_approved: false`)
-2. Mentor calls `updateCourse(courseId, { is_published: true })`
-3. RLS now allows all users to SELECT this course
-4. Mentor shares `/courses/{courseId}` URL with students
-5. Students can view and enroll in unapproved content
+1. Set `X-Forwarded-For: random-value-1` on first request
+2. Set `X-Forwarded-For: random-value-2` on second request
+3. Each request gets its own rate limit bucket → unlimited checkout attempts
 
-**Impact**: Bypasses content review workflow. Mentors can distribute unreviewed, potentially inappropriate or incorrect educational content. Does not appear in course listings (mitigating factor).
+**Impact**: Conditional — depends on deployment infrastructure. Netlify/Vercel typically overwrite this header. Self-hosted Docker without trusted proxy is vulnerable.
 
 **Remediation**:
 ```typescript
-// Remove is_published from allowlist
-const ALLOWED_FIELDS = ['title', 'description', 'thumbnail_url', 'difficulty',
-  'category', 'price', 'learning_objectives', 'prerequisites'] as const
-
-// Add approval check in getCourseById
-export async function getCourseById(courseId: string) {
-  // ... existing code ...
-  if (!data.is_approved && data.instructor_id !== user?.id) {
-    return { success: false, error: 'Course not available' }
-  }
-}
+// Rate limit by authenticated user ID (more reliable)
+const { data: { user } } = await supabase.auth.getUser()
+const rateLimitKey = user ? `checkout:user:${user.id}` : `checkout:ip:${ip}`
 ```
 
-**Effort**: Low (2 code changes)
+**Effort**: Low (5 lines changed)
 
 ---
 
-### [MEDIUM-002] Rate Limiting Ineffective in Serverless Deployment
+### [MEDIUM-004] No Multi-Factor Authentication for Admin Accounts
 
-**Severity**: Medium | **CVSS**: 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L) | **CWE**: CWE-770
-**Location**: `lib/rate-limit.ts`
+**Severity**: Medium | **CVSS**: 5.9 (AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N) | **CWE**: CWE-308
+**Location**: Platform-wide (no MFA implementation exists)
 
 **Description**:
-The rate limiter stores state in an in-memory `Map`. In serverless deployments (Netlify Functions), each invocation may receive a fresh execution context with empty memory. Rate limits for login (5/min), signup (3/hour), and checkout (5/min) become ineffective.
-
-**Vulnerable Code**:
-```typescript
-// lib/rate-limit.ts
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
-// This Map is empty on every cold start in serverless
-```
+Admin accounts have full platform access (user management, course approval, enrollment approval, all data visibility) but are protected only by single-factor authentication (email + password). Combined with MEDIUM-001 (admin emails exposed), this creates the platform's most dangerous attack chain.
 
 **Attack Scenario**:
-1. Attacker targets login endpoint against a Netlify deployment
-2. Each request may hit a different function instance (cold start)
-3. Rate limit counter never accumulates → unlimited login attempts
-4. Credential stuffing at full speed against weak passwords
+1. Enumerate admin emails via profile query (MEDIUM-001)
+2. Attempt credential stuffing or send targeted phishing email
+3. If credentials obtained → no MFA barrier → full admin access
+4. Admin can: approve/reject users, view all payments, manage all courses
 
-**Impact**: Enables brute force attacks against login, signup spam, and checkout abuse. Only affects serverless deployments; Docker single-instance deployments are protected.
-
-**Remediation**:
-```typescript
-// Use Upstash Redis (serverless-compatible) or Supabase table
-import { Redis } from '@upstash/redis'
-const redis = Redis.fromEnv()
-
-export async function checkRateLimit(key: string, opts: { maxRequests: number; windowMs: number }) {
-  const current = await redis.incr(key)
-  if (current === 1) await redis.pexpire(key, opts.windowMs)
-  return { allowed: current <= opts.maxRequests, remaining: Math.max(0, opts.maxRequests - current) }
-}
-```
-
-**Effort**: Medium (requires adding a dependency and external service)
-
----
-
-### [MEDIUM-003] No Rate Limiting on Password Reset
-
-**Severity**: Medium | **CVSS**: 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L) | **CWE**: CWE-799
-**Location**: `lib/actions/auth.ts:172-189`
-
-**Description**:
-The `requestPasswordReset()` function has no rate limiting, unlike `signIn` (5/min) and `signUp` (3/hour). An attacker can trigger unlimited password reset emails to any email address. Supabase Auth has built-in email rate limiting (partially mitigating), but the app layer provides no protection.
-
-**Vulnerable Code**:
-```typescript
-// lib/actions/auth.ts:172
-export async function requestPasswordReset(formData: FormData) {
-  const supabase = await createClient()
-  const email = formData.get('email')?.toString().trim()
-  // No rate limit check
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { ... })
-}
-```
-
-**Attack Scenario**:
-1. Attacker calls `requestPasswordReset` repeatedly with victim's email
-2. Victim's inbox flooded with legitimate reset emails
-3. Attacker sends phishing email mimicking the reset flow (blends in with legitimate emails)
-4. Victim clicks phishing link → credentials captured
-
-**Impact**: Email flooding for harassment, phishing amplification, potential Supabase email quota exhaustion.
+**Impact**: Full platform compromise if admin credentials are obtained through any means.
 
 **Remediation**:
 ```typescript
-export async function requestPasswordReset(formData: FormData) {
-  const email = formData.get('email')?.toString().trim()
-  if (!email) { /* ... */ }
-
-  const { checkRateLimit } = await import('@/lib/rate-limit')
-  const { allowed } = await checkRateLimit(`reset:${email}`, { maxRequests: 3, windowMs: 3600_000 })
-  if (!allowed) {
-    redirect('/forgot-password?error=' + encodeURIComponent('Too many requests. Please try again later.'))
-  }
-  // ... rest
+// Require MFA setup for admin accounts
+const { data: { user } } = await supabase.auth.getUser()
+const { data: factors } = await supabase.auth.mfa.listFactors()
+if (profile.role === 'admin' && (!factors?.totp?.length)) {
+  redirect('/admin/setup-mfa')
 }
 ```
 
-**Effort**: Low (add 4 lines of code)
+**Effort**: Medium (Supabase MFA integration + UI for setup/verification)
 
 ---
 
-### [MEDIUM-004] Content Security Policy Weakened by unsafe-inline/unsafe-eval
+### [LOW-001] CSP unsafe-inline Weakens XSS Defense
 
-**Severity**: Medium | **CVSS**: 4.7 (AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:L/A:N) | **CWE**: CWE-693
-**Location**: `next.config.js:67`
-
-**Description**:
-The CSP `script-src` directive includes `'unsafe-inline'` and `'unsafe-eval'`, which effectively disable CSP's XSS protection. While no XSS vectors currently exist in the application (React auto-escapes all output), this removes a critical defense-in-depth layer.
-
-**Vulnerable Code**:
-```javascript
-// next.config.js:67
-{ key: 'Content-Security-Policy', value: "... script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; ..." }
-```
-
-**Impact**: If a future code change introduces an XSS vector (e.g., `dangerouslySetInnerHTML` for rich content), CSP will not prevent exploitation. Currently theoretical — no active XSS path exists.
-
-**Remediation**:
-```javascript
-// Use nonce-based CSP (Next.js 13+ supports this)
-// In next.config.js, use the experimental CSP nonce feature
-// Or at minimum, remove 'unsafe-eval' for production builds
-{ key: 'Content-Security-Policy', value: "... script-src 'self' 'nonce-{random}' https://js.stripe.com; ..." }
-```
-
-**Effort**: Medium (requires testing all pages for breakage after removing unsafe directives)
-
----
-
-### [LOW-001] Quiz Attempt Race Condition (Self-DoS)
-
-**Severity**: Low | **CVSS**: 3.1 (AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L) | **CWE**: CWE-362
-**Location**: `lib/actions/quests.ts:60-155`
+**Severity**: Low | **CVSS**: 3.1 (AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N) | **CWE**: CWE-693
+**Location**: `next.config.js:56`
 
 **Description**:
-The quiz submission has a TOCTOU race condition in the max_attempts enforcement. The post-insert guard over-corrects: if more than `max_attempts` concurrent requests arrive, ALL are rolled back (including legitimate ones). This causes self-inflicted denial of attempts rather than allowing extra attempts.
+CSP `script-src` includes `'unsafe-inline'`. No XSS vectors exist (confirmed across 5 assessment cycles), making this purely theoretical. Required by Next.js for hydration scripts.
 
-**Impact**: A student sending concurrent quiz submissions could lose all their attempts. Not exploitable for gaining extra attempts. Reliability issue only.
+**Impact**: Theoretical — defense-in-depth gap only.
 
-**Remediation**:
-```sql
--- Use a database constraint instead
-CREATE UNIQUE INDEX idx_quest_attempts_limit
-  ON quest_attempts (quest_id, student_id, attempt_number);
--- Or use SELECT FOR UPDATE in the pre-check
-```
+**Remediation**: Implement nonce-based CSP when Next.js support matures.
 
 **Effort**: Medium
 
 ---
 
-### [LOW-002] IDOR Pattern on Read Functions (RLS Mitigated)
+### [LOW-002] Certificates Persist After Refund
 
-**Severity**: Low | **CVSS**: 2.0 (AV:N/AC:H/PR:L/UI:N/S:U/C:L/I:N/A:N) | **CWE**: CWE-639
-**Location**: `lib/actions/payments.ts`, `lib/actions/skills.ts`, `lib/actions/quests.ts`
+**Severity**: Low | **CVSS**: 3.1 (AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N) | **CWE**: CWE-841
+**Location**: `app/api/webhooks/stripe/route.ts:157-185`
 
 **Description**:
-Several read functions accept arbitrary user IDs without app-layer authorization checks: `getStudentPayments(studentId)`, `getCoursePayments(courseId)`, `getStudentSkills(studentId)`, `getStudentQuestAttempts(studentId)`. RLS policies prevent actual data leakage — unauthorized queries return empty results.
+The refund webhook revokes enrollment but does not delete or invalidate certificates. A student who completed a course and received a refund retains a valid, verifiable certificate.
 
-**Impact**: No data leakage. Defense-in-depth gap only. Functions silently return empty data instead of authorization errors.
+**Impact**: Low — the student did complete the course legitimately before refunding. The certificate reflects real learning, only the payment was reversed.
 
 **Remediation**:
 ```typescript
-// Add caller verification for proper error handling
-export async function getStudentPayments(studentId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.id !== studentId) {
-    return { success: false, error: 'Unauthorized' }
-  }
-  // ... existing query
-}
+// Add after enrollment deletion in refund handler:
+await supabase.from('certificates').delete()
+  .eq('student_id', payment.student_id)
+  .eq('course_id', payment.course_id)
 ```
 
-**Effort**: Low
+**Effort**: Low (3 lines)
 
 ---
 
@@ -313,13 +219,12 @@ export async function getStudentPayments(studentId: string) {
 
 | Priority | Finding | Fix | Effort | Timeline |
 |----------|---------|-----|--------|----------|
-| 1 | HIGH-001 | Restrict quest_options RLS policy to hide `is_correct` from students | Low | Immediate (1 day) |
-| 2 | MEDIUM-001 | Remove `is_published` from updateCourse allowlist; add `is_approved` check to getCourseById | Low | 1-2 days |
-| 3 | MEDIUM-003 | Add rate limiting to requestPasswordReset | Low | 1 day |
-| 4 | MEDIUM-002 | Replace in-memory rate limiter with persistent store (Redis/Upstash) | Medium | 1 week |
-| 5 | MEDIUM-004 | Implement nonce-based CSP, remove unsafe-eval | Medium | 1-2 weeks |
-| 6 | LOW-001 | Add database-level constraint for quiz max_attempts | Medium | 1 week |
-| 7 | LOW-002 | Add app-layer authorization checks on read functions | Low | 2-3 days |
+| 1 | MEDIUM-001 | Remove email from leaderboard; restrict profiles RLS | Low | 1-2 days |
+| 2 | MEDIUM-003 | Rate limit by user ID instead of IP | Low | 1 day |
+| 3 | MEDIUM-004 | Enable Supabase MFA for admin accounts | Medium | 1-2 weeks |
+| 4 | MEDIUM-002 | Replace 118 raw error returns with generic messages | Medium | 3-5 days |
+| 5 | LOW-002 | Delete certificates on refund | Low | 1 hour |
+| 6 | LOW-001 | Nonce-based CSP | Medium | 2-3 weeks |
 
 ---
 
@@ -327,56 +232,57 @@ export async function getStudentPayments(studentId: string) {
 
 | Step | Activity | Output |
 |------|----------|--------|
-| 1 | Codebase reconnaissance — mapped tech stack, entry points, auth mechanisms, data flows | `assessment/recon.md` |
-| 2 | Threat modelling — STRIDE analysis, attack trees, priority ranking | `assessment/threat-model.md` |
-| 3 | Vulnerability scanning — 11 targeted scanners based on threat model priorities | `assessment/vulnerabilities.md` |
-| 4 | Validation — source code re-review, data flow tracing, false positive elimination | `assessment/validated-vulnerabilities.md` |
+| 1 | Codebase reconnaissance (5 cycles) | `assessment/recon.md` |
+| 2 | Threat modelling with STRIDE (5 cycles) | `assessment/threat-model.md` |
+| 3 | Targeted vulnerability scanning (5 cycles) | `assessment/vulnerabilities.md` |
+| 4 | Finding validation and FP elimination (5 cycles) | `assessment/validated-vulnerabilities.md` |
 | 5 | Report compilation | `assessment/bug-bounty-report.md` |
 
-**Scanners executed**: vuln-access-control, vuln-injection, vuln-data-exposure, vuln-logic, vuln-authn-session, vuln-misconfig, vuln-api, vuln-client-side, vuln-dependency, vuln-dos (11 run, 12 skipped as not applicable)
+**Assessment history**: 5 iterative cycles of scan → validate → fix → rescan. All Critical and High findings from cycles 1-4 have been remediated and verified.
 
 ---
 
 ## Scope & Limitations
 
-**In scope**:
-- All TypeScript/JavaScript source code in `app/`, `lib/`, `components/`
-- Database schema and RLS policies in `database/`
-- Configuration files (`next.config.js`, `middleware.ts`, `package.json`)
-- API routes and server actions
+**In scope**: All TypeScript source (`app/`, `lib/`, `components/`), database schemas (`database/`), configuration files, dependencies.
 
-**Out of scope**:
-- Runtime/dynamic testing (no live environment accessed)
-- Infrastructure configuration (Netlify/Docker deployment settings)
-- Supabase project configuration (auth settings, email templates, rate limits)
-- Third-party service configurations (Stripe dashboard, Cloudinary settings)
-- `node_modules/` (covered by `npm audit` only)
-
-**Limitations**:
-- Static analysis cannot confirm runtime behavior of RLS policies — findings assume policies are applied as written in SQL files
-- Serverless cold-start behavior is inferred, not tested
-- Supabase's built-in rate limiting configuration is unknown
+**Out of scope**: Runtime testing, infrastructure config, Supabase project settings, Stripe dashboard, third-party service internals.
 
 ### Requires Dynamic Testing
 
 | ID | Title | What to Test | Why Static Analysis Is Insufficient |
 |----|-------|-------------|-------------------------------------|
-| DT-001 | Rate limiting in serverless | Deploy to Netlify, send concurrent requests, verify if rate limits persist | Cannot determine Netlify's function instance reuse strategy from code |
-| DT-002 | Supabase email rate limiting | Send 10+ password reset requests, check if Supabase blocks excess | Supabase project-level rate limit config not visible in source code |
+| MEDIUM-003 | Rate limit IP spoofing | Test x-forwarded-for behavior in actual Netlify/Docker deployment | Platform may overwrite header; depends on reverse proxy configuration |
+
+---
+
+## Previously Remediated (Cycles 1-4)
+
+| Cycle | Severity | Finding | Status |
+|-------|----------|---------|--------|
+| 1 | High | Quiz answer key exposed via quest_options RLS | ✅ Fixed (table separation) |
+| 1 | Medium | Mentor self-publishing bypass | ✅ Fixed (allowlist) |
+| 1 | Medium | In-memory rate limiting (serverless) | ✅ Fixed (Supabase-based) |
+| 2 | High | Next.js middleware bypass CVE | ✅ Fixed (updated to 16.2.6) |
+| 2 | Medium | Refund webhook can't revoke access | ✅ Fixed (admin client) |
+| 2 | Medium | CSRF check conditional on env var | ✅ Fixed (fail-closed) |
+| 3 | Critical | Role self-escalation via profiles UPDATE | ✅ Fixed (DB trigger) |
+| 3 | High | enrollInCourseInternal callable by students | ✅ Fixed (admin check) |
+| 3 | Medium | updateSkillProficiency direct manipulation | ✅ Fixed (caller check) |
+| 4 | High | Paid content readable without enrollment | ✅ Fixed (enrollment-based RLS) |
+| 4 | High | Quiz scoring global fetch (DoS) | ✅ Fixed (scoped query) |
 
 ---
 
 ## Positive Security Observations
 
-The following security controls are well-implemented:
-
-1. **Server-side auth validation** — Uses `supabase.auth.getUser()` (validates JWT) not `getSession()` (client-side only)
-2. **Row Level Security** — Comprehensive RLS policies on all 20+ tables; effectively blocks most access control attacks
-3. **Input validation** — Zod schemas on critical operations, UUID validation, email format checks
-4. **Field allowlists** — `updateCourse()` prevents mass assignment on sensitive fields
-5. **Generic error messages** — Login failures don't reveal whether email exists
-6. **Security headers** — X-Frame-Options, HSTS, X-Content-Type-Options all properly configured
-7. **Stripe webhook verification** — Proper signature validation prevents forged payment events
-8. **No injection vectors** — React auto-escaping, parameterized Supabase queries, no shell commands
-9. **OAuth restrictions** — Google SSO limited to student role only
-10. **Audit logging** — Admin actions tracked with actor, target, and timestamp
+1. **Layered defense**: Middleware + server action checks + RLS + DB triggers
+2. **Quiz integrity**: Answer separation with instructor-only RLS + admin client scoring
+3. **Payment security**: Stripe signature verification + admin client for webhooks + payment verification on enrollment
+4. **Role protection**: DB trigger prevents self-escalation of role/approval/active status
+5. **Rate limiting**: Persistent (Supabase-based), fails closed for auth paths
+6. **Input validation**: Zod schemas, UUID validation, field allowlists
+7. **Content protection**: Materials/sub-materials restricted to enrolled students
+8. **Atomic constraints**: DB trigger enforces quiz max_attempts
+9. **CSRF protection**: Fails closed if misconfigured
+10. **Generic auth errors**: No user enumeration via login responses

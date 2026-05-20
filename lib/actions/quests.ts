@@ -36,7 +36,7 @@ export async function submitQuestAttempt(
       return { success: false, error: 'Invalid answers format' }
     }
 
-    // Get quest details
+    // Get quest details (options without is_correct — that's in a separate table now)
     const { data: quest, error: questError } = await supabase
       .from('quests')
       .select(`
@@ -46,8 +46,7 @@ export async function submitQuestAttempt(
           question_text,
           points,
           quest_options (
-            id,
-            is_correct
+            id
           )
         )
       `)
@@ -57,6 +56,19 @@ export async function submitQuestAttempt(
     if (questError || !quest) {
       throw new Error('Quest not found')
     }
+
+    // Fetch correct answers using admin client (students cannot read this table)
+    // Scoped to only this quest's option IDs for performance
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const adminClient = createAdminClient()
+    const allOptionIds = quest.quest_questions.flatMap((q: any) => q.quest_options.map((o: any) => o.id))
+    const { data: correctOptions } = await adminClient
+      .from('quest_correct_options')
+      .select('option_id, is_correct')
+      .eq('is_correct', true)
+      .in('option_id', allOptionIds)
+
+    const correctOptionIds = new Set(correctOptions?.map(o => o.option_id) || [])
 
     // Check max attempts
     if (quest.max_attempts) {
@@ -80,7 +92,6 @@ export async function submitQuestAttempt(
 
     interface QuestOption {
       id: string
-      is_correct: boolean
     }
 
     interface QuestQuestion {
@@ -96,19 +107,19 @@ export async function submitQuestAttempt(
       totalPoints += question.points || 1
       const studentAnswer = answers[question.id]
 
-      // Check if answer is correct
-      const correctOptions = question.quest_options.filter((opt) => opt.is_correct)
-      const correctOptionIds = correctOptions.map((opt) => opt.id)
+      // Check if answer is correct using the admin-fetched correct options
+      const questionOptionIds = question.quest_options.map(opt => opt.id)
+      const correctForQuestion = questionOptionIds.filter(id => correctOptionIds.has(id))
 
       if (Array.isArray(studentAnswer)) {
         // Multiple choice - check if arrays match
         const isCorrect =
-          studentAnswer.length === correctOptionIds.length &&
-          studentAnswer.every((id: string) => correctOptionIds.includes(id))
+          studentAnswer.length === correctForQuestion.length &&
+          studentAnswer.every((id: string) => correctOptionIds.has(id))
         if (isCorrect) earnedPoints += question.points || 1
       } else {
         // Single choice
-        if (correctOptionIds.includes(studentAnswer)) {
+        if (correctOptionIds.has(studentAnswer)) {
           earnedPoints += question.points || 1
         }
       }
@@ -228,6 +239,12 @@ export async function getStudentQuestAttempts(studentId: string, questId?: strin
   const supabase = await createClient()
 
   try {
+    // Verify caller is the student
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.id !== studentId) {
+      return { success: false, error: 'Unauthorized', data: [] }
+    }
+
     let query = supabase
       .from('quest_attempts')
       .select(`
@@ -642,10 +659,9 @@ export async function createOption(questionId: string, optionData: {
   const supabase = await createClient()
 
   try {
-    const newOption: Database['public']['Tables']['quest_options']['Insert'] = {
+    const newOption = {
       question_id: questionId,
       option_text: optionData.option_text,
-      is_correct: optionData.is_correct,
       order_index: optionData.order_index,
     }
 
@@ -657,7 +673,15 @@ export async function createOption(questionId: string, optionData: {
 
     if (error) throw error
 
-    return { success: true, data }
+    // Store is_correct in the separate secure table
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const adminClient = createAdminClient()
+    await adminClient.from('quest_correct_options').insert({
+      option_id: data.id,
+      is_correct: optionData.is_correct,
+    })
+
+    return { success: true, data: { ...data, is_correct: optionData.is_correct } }
   } catch (error) {
     console.error('Error creating option:', error)
     return { success: false, error }
@@ -675,14 +699,33 @@ export async function updateOption(optionId: string, optionData: Partial<{
   const supabase = await createClient()
 
   try {
-    const { data, error } = await supabase
-      .from('quest_options')
-      .update(optionData)
-      .eq('id', optionId)
-      .select()
-      .single()
+    // Separate is_correct from option table fields
+    const { is_correct, ...optionFields } = optionData
 
-    if (error) throw error
+    if (Object.keys(optionFields).length > 0) {
+      const { error } = await supabase
+        .from('quest_options')
+        .update(optionFields)
+        .eq('id', optionId)
+
+      if (error) throw error
+    }
+
+    // Update is_correct in the secure table if provided
+    if (is_correct !== undefined) {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const adminClient = createAdminClient()
+      await adminClient.from('quest_correct_options').upsert({
+        option_id: optionId,
+        is_correct,
+      })
+    }
+
+    const { data } = await supabase
+      .from('quest_options')
+      .select()
+      .eq('id', optionId)
+      .single()
 
     return { success: true, data }
   } catch (error) {
@@ -746,8 +789,10 @@ export async function getAllCourseQuests(courseId: string) {
           quest_options (
             id,
             option_text,
-            is_correct,
-            order_index
+            order_index,
+            quest_correct_options (
+              is_correct
+            )
           )
         )
       `)
